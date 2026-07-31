@@ -1,0 +1,35 @@
+DONE 7435930193543449897 12.34x terms=2/4
+{
+  "engine": "openvino-genai-CPU",
+  "model": "base-int8",
+  "load_sec": 1.297,
+  "samples": 1,
+  "audio_sec": 56.1,
+  "infer_sec": 4.546,
+  "x_realtime": 12.341,
+  "expected_terms": 4,
+  "term_hits": 2,
+  "term_recall": 0.5,
+  "results": [
+    {
+      "id": "7435930193543449897",
+      "duration_sec": 56.1,
+      "infer_sec": 4.546,
+      "x_realtime": 12.34,
+      "characters": 354,
+      "term_score": {
+        "expected": [
+          "FaceFusion",
+          "FunClip",
+          "Pyramid Flow",
+          "PaintsUndo"
+        ],
+        "hits": [
+          "FaceFusion",
+          "FunClip"
+        ],
+        "recall": 0.5
+      }
+    }
+  ]
+}

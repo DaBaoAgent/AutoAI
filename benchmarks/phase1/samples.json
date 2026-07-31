@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "description": "20 条真实收藏音频，按短/中/长与英文专名风险分层；总时长约 2.14 小时。",
+  "samples": [
+    {
+      "id": "7435930193543449897",
+      "duration_sec": 56.1,
+      "bucket": "short_github",
+      "smoke": true,
+      "expected_terms": ["FaceFusion", "FunClip", "Pyramid Flow", "PaintsUndo"]
+    },
+    {
+      "id": "7451517394540842292",
+      "duration_sec": 58.4,
+      "bucket": "short_tool",
+      "smoke": false,
+      "expected_terms": ["RPA"]
+    },
+    {
+      "id": "7470501440163745050",
+      "duration_sec": 59.4,
+      "bucket": "short_tutorial",
+      "smoke": false,
+      "expected_terms": ["DeepSeek"]
+    },
+    {
+      "id": "7666394498004970993",
+      "duration_sec": 48.1,
+      "bucket": "short_github",
+      "smoke": false,
+      "expected_terms": ["Ruflow"]
+    },
+    {
+      "id": "7667879568950609139",
+      "duration_sec": 92.9,
+      "bucket": "short_github",
+      "smoke": false,
+      "expected_terms": ["buzz", "ai-agent-book", "worldmonitor", "OmniRoute", "orca", "RuView", "ego-lite"]
+    },
+    {
+      "id": "7653037339651902761",
+      "duration_sec": 122.4,
+      "bucket": "medium_github",
+      "smoke": false,
+      "expected_terms": ["GitHub", "skill"]
+    },
+    {
+      "id": "7667234100725501238",
+      "duration_sec": 169.9,
+      "bucket": "medium_github",
+      "smoke": true,
+      "expected_terms": ["hallmark", "OpenCut", "awesome-llm-apps", "Vibe-Trading", "DeepTutor", "cangjie-skill", "OfficeCLI", "codex", "openinterpreter", "code-review-graph"]
+    },
+    {
+      "id": "7460830464559811892",
+      "duration_sec": 180.8,
+      "bucket": "medium_review",
+      "smoke": false,
+      "expected_terms": ["ChatGPT", "Claude"]
+    },
+    {
+      "id": "7461873879196142906",
+      "duration_sec": 185.9,
+      "bucket": "medium_tutorial",
+      "smoke": false,
+      "expected_terms": []
+    },
+    {
+      "id": "7265598741292305722",
+      "duration_sec": 282.8,
+      "bucket": "medium_dialogue",
+      "smoke": false,
+      "expected_terms": ["Midjourney"]
+    },
+    {
+      "id": "7466424432127495482",
+      "duration_sec": 344.7,
+      "bucket": "medium_dialogue",
+      "smoke": false,
+      "expected_terms": ["DeepSeek", "ChatGPT"]
+    },
+    {
+      "id": "7666819575564078351",
+      "duration_sec": 282.2,
+      "bucket": "medium_codex",
+      "smoke": false,
+      "expected_terms": ["Codex"]
+    },
+    {
+      "id": "7667128057580358950",
+      "duration_sec": 392.3,
+      "bucket": "medium_openclaw",
+      "smoke": false,
+      "expected_terms": ["OpenClaw"]
+    },
+    {
+      "id": "7470201298705517858",
+      "duration_sec": 403.0,
+      "bucket": "medium_tutorial",
+      "smoke": false,
+      "expected_terms": ["Coze", "DeepSeek"]
+    },
+    {
+      "id": "7657864594769169702",
+      "duration_sec": 583.7,
+      "bucket": "medium_skill",
+      "smoke": false,
+      "expected_terms": ["skill"]
+    },
+    {
+      "id": "7467543086491651386",
+      "duration_sec": 651.8,
+      "bucket": "long_tutorial",
+      "smoke": false,
+      "expected_terms": ["DeepSeek", "ChatGPT"]
+    },
+    {
+      "id": "7664420021036289318",
+      "duration_sec": 694.9,
+      "bucket": "long_tutorial",
+      "smoke": false,
+      "expected_terms": []
+    },
+    {
+      "id": "7658497674370420011",
+      "duration_sec": 748.6,
+      "bucket": "long_agent",
+      "smoke": false,
+      "expected_terms": ["Hermes Agent", "SOUL.md"]
+    },
+    {
+      "id": "7458209307490815295",
+      "duration_sec": 881.9,
+      "bucket": "long_coding",
+      "smoke": false,
+      "expected_terms": ["Cursor", "DeepSeek"]
+    },
+    {
+      "id": "7471269585375874358",
+      "duration_sec": 1476.2,
+      "bucket": "long_tutorial",
+      "smoke": true,
+      "expected_terms": ["API", "DeepSeek", "iPhone"]
+    }
+  ]
+}
+

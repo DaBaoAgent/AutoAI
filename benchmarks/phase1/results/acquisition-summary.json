@@ -1,0 +1,23 @@
+{
+  "tested_at": "2026-07-31T06:00:00+08:00",
+  "browser": "Chrome（用户现有登录态）",
+  "captcha_visible": false,
+  "account_page_available": true,
+  "single_page": {
+    "video_id": "7473402635400334651",
+    "playable": true,
+    "page_assets_video_count": 0,
+    "dom_current_src_available": true,
+    "current_src_mime_hint": "video_mp4",
+    "audio_only_url_observed": false
+  },
+  "sequential_navigation_test": {
+    "requested_items": 5,
+    "timeout_ms": 180000,
+    "last_observed_video_id": "7637492465099967784",
+    "completed_all_items": false,
+    "meets_100_items_per_hour": false
+  },
+  "decision": "reject_per_video_navigation_for_bulk_acquisition",
+  "next_experiment": "在收藏列表页捕获一次列表接口响应，从单个响应批量提取 aweme_id 与音视频地址；不读取或导出 Cookie。"
+}

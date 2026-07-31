@@ -1,0 +1,4 @@
+Downloading ggml model small...
+Done! Model small saved in "D:\@kaifa\shoucang\benchmarks\phase1\models"\ggml-small.bin
+You can now use it like this:
+D:\@kaifa\shoucang\benchmarks\phase1\vendors\whisper.cpp\build\bin\Release\whisper-cli.exe -m "D:\@kaifa\shoucang\benchmarks\phase1\models"\ggml-small.bin -f samples\jfk.wav

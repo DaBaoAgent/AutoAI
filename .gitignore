@@ -1,0 +1,42 @@
+# 虚拟环境
+.venv/
+venv/
+benchmarks/phase1/.venv-openvino/
+
+# 缓存和下载（超大文件）
+benchmarks/phase1/cache/
+benchmarks/phase1/downloads/
+benchmarks/phase1/tools/
+benchmarks/phase1/vendors/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# 数据文件（太大）
+data/media/
+data/transcripts/
+data/index/
+data/tmp/
+data/graph/
+
+# 日志
+logs/
+
+# 模型文件
+benchmarks/phase1/models/
+
+# 环境变量
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# 系统文件
+Thumbs.db
+.DS_Store

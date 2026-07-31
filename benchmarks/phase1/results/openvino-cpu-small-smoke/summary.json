@@ -1,0 +1,85 @@
+{
+  "engine": "openvino-genai-CPU",
+  "model": "small-int8",
+  "load_sec": 2.911,
+  "samples": 3,
+  "audio_sec": 1702.2,
+  "infer_sec": 331.155,
+  "x_realtime": 5.14,
+  "expected_terms": 17,
+  "term_hits": 12,
+  "term_recall": 0.7059,
+  "results": [
+    {
+      "id": "7435930193543449897",
+      "duration_sec": 56.1,
+      "infer_sec": 13.15,
+      "x_realtime": 4.266,
+      "characters": 354,
+      "term_score": {
+        "expected": [
+          "FaceFusion",
+          "FunClip",
+          "Pyramid Flow",
+          "PaintsUndo"
+        ],
+        "hits": [
+          "FaceFusion",
+          "FunClip",
+          "Pyramid Flow",
+          "PaintsUndo"
+        ],
+        "recall": 1.0
+      }
+    },
+    {
+      "id": "7667234100725501238",
+      "duration_sec": 169.9,
+      "infer_sec": 40.502,
+      "x_realtime": 4.195,
+      "characters": 1039,
+      "term_score": {
+        "expected": [
+          "hallmark",
+          "OpenCut",
+          "awesome-llm-apps",
+          "Vibe-Trading",
+          "DeepTutor",
+          "cangjie-skill",
+          "OfficeCLI",
+          "codex",
+          "openinterpreter",
+          "code-review-graph"
+        ],
+        "hits": [
+          "OpenCut",
+          "Vibe-Trading",
+          "DeepTutor",
+          "OfficeCLI",
+          "codex"
+        ],
+        "recall": 0.5
+      }
+    },
+    {
+      "id": "7471269585375874358",
+      "duration_sec": 1476.2,
+      "infer_sec": 277.503,
+      "x_realtime": 5.32,
+      "characters": 7326,
+      "term_score": {
+        "expected": [
+          "API",
+          "DeepSeek",
+          "iPhone"
+        ],
+        "hits": [
+          "API",
+          "DeepSeek",
+          "iPhone"
+        ],
+        "recall": 1.0
+      }
+    }
+  ]
+}

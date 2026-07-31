@@ -1,0 +1,21 @@
+# AutoAI 依赖
+
+# 核心依赖
+sqlite3
+
+# 转写引擎
+openvino-genai>=2025.0
+whisper
+
+# Playwright（绕过抖音限流）
+playwright>=1.48
+playwright-stealth
+
+# 向量索引
+fastembed>=0.4
+
+# 网络
+httpx>=0.28,<1
+
+# 工具
+ffmpeg-python>=0.2

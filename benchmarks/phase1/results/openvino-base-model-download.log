@@ -1,0 +1,8 @@
+{
+  "repo_id": "OpenVINO/whisper-base-int8-ov",
+  "revision": "0606293f0511136ada21755a265492f623a934b8",
+  "openvino_devices": [
+    "CPU",
+    "GPU"
+  ]
+}

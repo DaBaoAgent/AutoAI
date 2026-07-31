@@ -1,0 +1,51 @@
+{
+  "asr": {
+    "winner": "hybrid_openvino_cpu",
+    "fast_lane": {
+      "engine": "openvino-genai",
+      "model": "OpenVINO/whisper-base-int8-ov",
+      "device": "CPU",
+      "x_realtime": 13.96,
+      "verified_term_recall": 0.4118
+    },
+    "proper_noun_lane": {
+      "engine": "openvino-genai",
+      "model": "OpenVINO/whisper-small-int8-ov",
+      "device": "CPU",
+      "x_realtime": 5.14,
+      "verified_term_recall": 0.7059
+    },
+    "rejected": [
+      {
+        "engine": "faster-whisper",
+        "model": "small-int8",
+        "device": "CPU",
+        "x_realtime": 3.308,
+        "reason": "below_speed_gate"
+      },
+      {
+        "engine": "whisper.cpp",
+        "model": "small",
+        "device": "CPU",
+        "x_realtime": 1.679,
+        "reason": "below_speed_gate"
+      },
+      {
+        "engine": "openvino-genai",
+        "model": "small-int8",
+        "device": "GPU",
+        "x_realtime": 2.157,
+        "reason": "below_speed_gate_and_high_compile_latency"
+      }
+    ]
+  },
+  "acquisition": {
+    "per_video_navigation": "rejected",
+    "meets_100_items_per_hour": false,
+    "next": "capture_favorites_list_api_response"
+  },
+  "full_batch": {
+    "remaining_items": 466,
+    "status": "hold_until_acquisition_gate_passes"
+  }
+}
