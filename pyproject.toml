@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dabo-local-kb"
+version = "0.2.0"
+description = "大宝的本地 AI 知识库：抖音收藏、转写、检索与知识图谱"
+requires-python = ">=3.12"
+dependencies = [
+  "fastmcp>=2.12,<4",
+  "fastembed>=0.8,<0.9",
+  "faster-whisper>=1.2,<2",
+  "networkx>=3.4,<4",
+  "rapidocr>=3,<4",
+]
+
+[project.scripts]
+dabo-kb = "dabo_kb.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

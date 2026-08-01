@@ -1,0 +1,24 @@
+{
+  "status_code": 0,
+  "aweme_list": [
+    {
+      "aweme_id": "7664123134932536616",
+      "desc": "2026第29周GitHub热榜：AI工具链太香了！",
+      "duration": 60000,
+      "music": {
+        "play_url": {
+          "url_list": [
+            "https://audio.example/temporary-signed-audio.m4a"
+          ]
+        }
+      },
+      "video": {
+        "play_addr": {
+          "url_list": [
+            "https://video.example/temporary-signed-video.mp4"
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -40,3 +40,16 @@ benchmarks/phase1/models/
 # 系统文件
 Thumbs.db
 .DS_Store
+
+# 运行时产物（不入库）
+data/*.log
+data/*.err.log
+data/*.pid
+data/frames/
+data/sources/*checkpoint*.json
+data/sources/*queue*.json
+data/sources/sync_state.json
+data/sources/hermes_handoff.json
+
+# 临时调试脚本
+debug_*.py

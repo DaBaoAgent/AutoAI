@@ -9,7 +9,8 @@ from playwright.sync_api import sync_playwright
 
 WORKDIR = r"D:\@kaifa\shoucang"
 VENV_PYTHON = os.path.join(WORKDIR, ".venv", "Scripts", "python.exe")
-CHROME_PROFILE = r"C:\Users\xxx13\AppData\Local\Google\Chrome\User Data\Profile 1"
+CHROME_BASE = r"C:\Users\xxx13\AppData\Local\Google\Chrome\User Data"
+CHROME_PROFILE = os.path.join(CHROME_BASE, "Default")
 SYNC_STATE_PATH = os.path.join(WORKDIR, "data", "sources", "sync_state.json")
 NEW_FAVORITES_PATH = os.path.join(WORKDIR, "data", "sources", "douyin_favorites_new.json")
 
