@@ -17,7 +17,7 @@
 
 ## Hermes 续跑命令
 
-在 `D:\@kaifa\shoucang` 执行：
+在 `D:\@kaifa\autoai` 执行：
 
 ```powershell
 .\.venv\Scripts\dabo-kb.exe status

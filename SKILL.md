@@ -12,7 +12,7 @@ metadata:
     config:
       skills.config.autoai_root:
         type: string
-        default: "D:\\@kaifa\\shoucang"
+        default: "D:\\@kaifa\\autoai"
 ---
 
 # AutoAI 本地知识库（自迭代版）
@@ -22,7 +22,7 @@ metadata:
 
 ## 项目位置
 
-`D:\@kaifa\shoucang`，CLI 入口：`.\\.venv\\Scripts\\dabo-kb.exe`
+`D:\@kaifa\autoai`，CLI 入口：`.\\.venv\\Scripts\\dabo-kb.exe`
 
 ## 核心命令
 
@@ -71,7 +71,7 @@ metadata:
 ### 使用方式
 
 ```powershell
-cd D:\@kaifa\shoucang
+cd D:\@kaifa\autoai
 .\.venv\Scripts\python.exe playwright_fetch.py
 ```
 
@@ -133,7 +133,7 @@ cd D:\@kaifa\shoucang
 5. 无新收藏时跳过（零token消耗）
 
 ```powershell
-cd D:\@kaifa\shoucang
+cd D:\@kaifa\autoai
 .\.venv\Scripts\python.exe sync_favorites.py
 ```
 
@@ -183,7 +183,7 @@ cd D:\@kaifa\shoucang
 ## 项目结构
 
 ```
-D:\@kaifa\shoucang\
+D:\@kaifa\autoai\
 ├── src/dabo_kb/           # Python 源码
 │   ├── cli.py             # CLI 入口
 │   ├── pipeline.py        # process-all 编排

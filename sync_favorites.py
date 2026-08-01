@@ -7,7 +7,7 @@ import json, time, os, sys, subprocess
 from datetime import datetime, timezone
 from playwright.sync_api import sync_playwright
 
-WORKDIR = r"D:\@kaifa\shoucang"
+WORKDIR = r"D:\@kaifa\autoai"
 VENV_PYTHON = os.path.join(WORKDIR, ".venv", "Scripts", "python.exe")
 CHROME_BASE = r"C:\Users\xxx13\AppData\Local\Google\Chrome\User Data"
 CHROME_PROFILE = os.path.join(CHROME_BASE, "Default")
