@@ -1,3 +1,11 @@
+<!-- README-PROMO:START -->
+<p align="center">
+  <img src="assets/readme/hero.webp" alt="AutoAI：把抖音 AI 收藏转写为可检索的本地知识库与知识图谱" width="100%" />
+  <img src="assets/readme/workflow.webp" alt="AutoAI 工作流：收藏、离线转写、语义检索、知识关联与日报" width="100%" />
+  <img src="assets/readme/beginner.webp" alt="AutoAI 新手上手：本地运行、隐私优先，从收藏快速找到答案" width="100%" />
+</p>
+<!-- README-PROMO:END -->
+
 # AutoAI 🧠
 
 > 抖音AI收藏视频 → 自动下载 → Whisper转写 → 向量检索 → 知识图谱
