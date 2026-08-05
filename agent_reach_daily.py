@@ -306,16 +306,30 @@ def enrich_zh(items):
 HTML_TMPL = """<!DOCTYPE html>
 <html lang="zh"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{title}</title></head>
+<title>@TITLE@</title>
+<script>
+function copyRepo(btn, name){
+  var done = function(){ btn.textContent = '✓ 已复制 ' + name; setTimeout(function(){ btn.textContent = '📋 复制仓库名'; }, 1600); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(name).then(done, function(){ fallbackCopy(btn, name, done); });
+  } else { fallbackCopy(btn, name, done); }
+}
+function fallbackCopy(btn, name, done){
+  var ta = document.createElement('textarea');
+  ta.value = name; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); done(); } catch(e) { alert('复制失败，请手动复制：' + name); }
+  document.body.removeChild(ta);
+}
+</script></head>
 <body style="margin:0;padding:0;background:#0f1420;font-family:'Segoe UI',PingFang SC,Microsoft YaHei,sans-serif;color:#e6edf3">
 <div style="max-width:760px;margin:0 auto;padding:24px 16px">
   <div style="background:linear-gradient(135deg,#1f6feb 0%,#8250df 100%);border-radius:16px;padding:22px 26px;margin-bottom:22px">
-    <div style="font-size:26px;font-weight:700;color:#fff">{title}</div>
-    <div style="color:rgba(255,255,255,.85);font-size:13px;margin-top:6px">{subtitle}</div>
+    <div style="font-size:26px;font-weight:700;color:#fff">@TITLE@</div>
+    <div style="color:rgba(255,255,255,.85);font-size:13px;margin-top:6px">@SUBTITLE@</div>
   </div>
-{section_html}
+@SECTIONS@
   <div style="text-align:center;color:#6e7681;font-size:12px;margin-top:26px;padding-bottom:10px">
-    AutoAI 每日看板 · 数据源：Agent-Reach（GitHub/Exa/B站/V2EX/HN）· {date}
+    AutoAI 每日看板 · 数据源：Agent-Reach（GitHub/Exa/B站/V2EX/HN）· @DATE@
   </div>
 </div></body></html>"""
 
@@ -333,6 +347,11 @@ CARD = """    <div style="background:#232b3d;border-radius:10px;padding:12px 14p
       <div style="color:#8b949e;font-size:12px;margin-top:4px">{extra}{heat}</div>
       {desc_html}
       {reason_html}
+      <div style="margin-top:7px">
+        <button onclick="copyRepo(this, '{repo_esc}')"
+          style="background:#1f6feb;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:inherit">📋 复制仓库名</button>
+        <span style="color:#6e7681;font-size:11px;margin-left:8px">点击按钮自动复制「{repo_esc}」</span>
+      </div>
     </div>"""
 
 
@@ -358,17 +377,18 @@ def build_html(items, date):
             reason_html = ""
             if it.get("reason"):
                 reason_html = f'<div style="color:#7ee787;font-size:12px;margin-top:3px">📌 收录理由：{it["reason"]}</div>'
+            repo_esc = it["title"].replace("'", "&#39;")
             cards.append(CARD.format(url=it["url"], title=it["title"],
                                      platform=it["platform"], extra=it["extra"] + heat,
                                      heat="", desc_html=desc_html,
-                                     reason_html=reason_html, color=color))
+                                     reason_html=reason_html, repo_esc=repo_esc, color=color))
         section_html.append(SECTION_HEAD.format(emoji=emoji, name=name, desc=desc,
                                                 count=len(sel), cards="\n".join(cards) if cards else
                                                 "    <div style='color:#6e7681;font-size:13px'>今日暂无</div>"))
     title = f"🧠 AutoAI 每日 AI 看板 — {date}"
     subtitle = f"博主推荐开源项目 / 优质技能 / AI圈新闻 · 共 {total} 条"
-    return HTML_TMPL.format(title=title, subtitle=subtitle, date=date,
-                            section_html="\n".join(section_html))
+    return (HTML_TMPL.replace("@TITLE@", title).replace("@SUBTITLE@", subtitle)
+                    .replace("@DATE@", date).replace("@SECTIONS@", "\n".join(section_html)))
 
 
 # ---------- 主流程 ----------
@@ -441,6 +461,20 @@ def main():
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(build_html(uniq, today))
     print(f"  HTML 看板: {html_path}")
+
+    # 仓库名单附件（邮箱场景的"一键复制"：打开附件全选复制即可）
+    repos_path = os.path.join(WORKDIR, "data", "tmp", f"repos_{today}.txt")
+    with open(repos_path, "w", encoding="utf-8") as f:
+        f.write(f"# AutoAI 每日 AI 看板项目名单 — {today}\n")
+        f.write("# 全选(Ctrl+A)复制即可，每行一个\n\n")
+        seen_repo = set()
+        for it in uniq:
+            key = it["title"].strip()
+            if key in seen_repo:
+                continue
+            seen_repo.add(key)
+            f.write(f"{key}\n")
+    print(f"  仓库名单: {repos_path}")
 
     # 预览
     print("\n[预览] 各分类 Top 5:")
