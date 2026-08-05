@@ -17,6 +17,8 @@ metadata:
 
 # AutoAI 本地知识库（自迭代版）
 
+**v3.0（2026-08-06）学习规则变更**：❌ 不再拉取/转录抖音号收藏（`sync_favorites.py` 定时任务已暂停，旧抖音收藏仍可检索）。✅ 改为每天凌晨3点用 **Agent-Reach 全平台拉取**当天最新的博主推荐开源项目/优质技能/AI圈新闻（GitHub/Exa/B站/V2EX/HN）→ 整理入库（`source_type="agent-reach"`）→ 生成 HTML 看板简报 → 发到 QQ 邮箱。入口：`agent_reach_daily.py`（cron 任务 `AutoAI-每日AI看板` bdf900d485c3，每天 0 3 * * *）。
+
 处理抖音 AI 收藏视频的全流程：下载音轨 → OpenVINO Whisper 转写 → 向量索引 → 知识图谱。
 **v2.0 新增：自适应失败恢复、浏览器回退提取、增量收藏同步、故障模式自诊断。**
 
@@ -123,7 +125,9 @@ cd D:\@kaifa\autoai
 3. 解析`videoInfoRes.item_list[0]`获取视频元数据
 4. 注意：新格式无`music.play_url`，需从`video.play_addr.url_list`下载视频后ffmpeg提音轨
 
-### 🆕 增量收藏自动同步
+### ⏸️ 增量收藏自动同步（2026-08-06 起停用）
+
+> **v3.0 起不再拉取抖音收藏**，此章节仅作历史保留。cron `df67d8af2cc2` 已暂停。
 
 `sync_favorites.py` — 每6小时自动运行：
 1. Playwright + Chrome Profile 继承登录态
@@ -214,14 +218,37 @@ D:\@kaifa\autoai\
 - 处理队列在 `data/sources/douyin_processing_queue.json`
 - 临时签名地址在 `data/tmp/douyin_media_candidates.json`（有时效性）
 
-## 🆕 AI趋势猎手（每日聚合）
+## 🆕 每日AI看板（v3.0，替代 AI趋势猎手）
 
-每天从GitHub、知识图谱、Web搜索等多渠道聚合最新AI技能/开源项目，生成日报并邮件发送。
+每天凌晨3点用 **Agent-Reach** 全平台拉取当天最新 AI 内容，入库 + 发 HTML 看板邮件。
 
 ### 触发
 
-- "今天有什么新项目" / "AI趋势" / "最新开源" / "日报"
-- 每日9:00定时自动运行
+- "今日AI看板" / "今天有什么新项目" / "AI趋势" / "最新开源" / "日报"
+- 每日 03:00 定时自动运行（cron `AutoAI-每日AI看板`，`0 3 * * *`）
+
+### 执行
+
+```powershell
+cd D:\@kaifa\autoai
+.\\.venv\\Scripts\\python.exe agent_reach_daily.py
+```
+
+脚本自动：
+1. **Agent-Reach 全平台采集**（无登录态渠道）：
+   - GitHub API：当天新建 AI/Agent 项目（3天窗口，search 索引延迟）+ 今日活跃高星项目（pushed:>昨天 stars:>200）
+   - Exa（mcporter）：AI 新闻 / 博主推荐开源 / 技能教程 5 组查询
+   - B站（bili-cli）：搜索「AI 开源」「AI 工具」最新视频（博主推荐）
+   - V2EX：热门主题（AI 过滤，剔除 promotions 推广节点）
+   - Hacker News：topstories（AI 过滤）
+2. **入库**：`source_type="agent-reach"`，`source_id="agent-reach-daily-YYYY-MM-DD"`，标题/链接/热度/描述分块
+3. **HTML 看板**：`data/tmp/agent_reach_daily_YYYY-MM-DD.html`（🔥开源项目 / 💡优质技能 / 📰AI新闻 三区卡片）
+4. **发邮件**：send-email skill `--html` 发送到 QQ 邮箱
+
+### 前置条件
+
+- 代理：跑脚本前 `export HTTP_PROXY/HTTPS_PROXY=http://127.0.0.1:15715`（V2EX/Exa/B站需要）
+- 邮件：`export HERMES_HOME=C:/Users/xxx13/AppData/Local/hermes`（send_email.py 凭证在 AppData 的 .env，2026-08-06 已修脚本支持 HERMES_HOME）
 
 ### 数据源
 
@@ -233,6 +260,32 @@ D:\@kaifa\autoai\
 | 知乎 | `web_search site:zhihu.com` | 按需 |
 | B站 | `web_search site:bilibili.com` | 按需 |
 | X/Twitter | `x_search` | 按需 |
+
+### 🆕 直接收录方案（2026-08-02 验证）
+
+**GitHub Trending 页面被墙**（`github.com/trending` curl HTTP 000），B站搜索 API 412 风控，X 无额度。可用通道：
+
+1. **GitHub Search API**（稳定可用）→ `ingest_github_trending.py`
+   - 近7天新建项目：`q=created:>YYYY-MM-DD&sort=stars&order=desc`
+   - 本周活跃 AI 项目：`q=stars:>5000+pushed:>YYYY-MM-DD+ai+OR+agent+OR+llm`
+   - 整理为 Markdown 日报 → `upsert_document(source_type="github")` + `replace_chunks` → 可被检索
+2. **抖音作者主页追踪** → `fetch_author_latest.py`
+   - 从任意分享页 curl 提取作者 sec_uid（正则 `sec_uid":"MS4wLjAB...`）
+   - Playwright 打开主页，拦截 `aweme/v1/web/aweme/post/` 响应拿最新视频列表
+   - 定期源账号：AI腻味（GitHub AI热榜系列）、徐艾伦 tielanhai（一周AI大事系列）
+   - 分享页 `_ROUTER_DATA` 已多次变格式，sec_uid 正则提取始终可用
+3. **新增视频入库**：写 `data/sources/douyin_new_hot_*.json`（account+items 结构）→ `ingest` → `playwright_fetch.py` 拿签名地址 → `download-media <id>` → `transcribe-smart <id>` → `index`
+4. **🆕 全平台聚合** → `ingest_aggregator.py`（2026-08-02 验证）
+   - GitHub API（新建+topic:ai）+ Hacker News（topstories 过滤AI）+ B站 popular 接口 + 微博 hotSearch 接口
+   - 抖音热榜需 Playwright+Chrome 登录态 → 存 `data/tmp/douyin_hot.json` 供聚合读取
+   - 聚合写入 `source_type="aggregator"`，source_id=`ai-hotspot-YYYY-MM-DD`
+   - 注意：B站搜索 API 需 wbi 签名（412），但 `x/web-interface/popular` 无需签名可用；微博 `weibo.com/ajax/side/hotSearch` 免登录可用；小红书 explore 需登录+渲染（headless 直接撞安全验证）；知乎热榜 API 需登录（101 身份未验证）
+
+### ego-lite 调查结论（2026-08-02）
+
+- **ego-lite（citrolabs/ego-lite）当前只有 macOS 版**，Windows/Linux 在官方 roadmap 上标记 "Planned"；npm 无跨平台包；GitHub release 只有 skill zip 无浏览器本体
+- 其核心能力 = 复用 Chrome 登录态 + 并行任务空间 → **本机用 Playwright `launch_persistent_context(user_data_dir=Default profile)` 等效实现**
+- 无需再尝试安装 ego-lite；浏览器自动化统一走 `browser-session-automation` 技能 + autoai 现有 playwright 脚本
 
 ### 执行流程
 
