@@ -76,16 +76,20 @@ def run_cmd(cmd, timeout=90):
 
 # ---------- 各渠道采集 ----------
 
-def fetch_github(days=4):
-    """高星 AI 开源项目（stars:>1000）：近期活跃（pushed 索引延迟~3天，窗口 4 天）
-    + 3 天窗口新建（捕捉爆发的新项目）"""
+def fetch_github(days=4, new_days=60):
+    """高星 AI 开源项目（stars:>1000，排除老牌长期热门）：
+    - 近期活跃 + 近 new_days 天创建（created 过滤掉 openclaw/hermes 这类老项目）
+    - 3 天窗口新建（捕捉刚爆的新项目）
+    GitHub search 的 pushed 索引延迟 ~3 天，窗口 4 天"""
     items = []
     since_new = (datetime.now() - timedelta(days=3)).strftime("%Y-%m-%d")
     since_hot = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    since_created = (datetime.now() - timedelta(days=new_days)).strftime("%Y-%m-%d")
+    cutoff = datetime.now() - timedelta(days=new_days)
     queries = [
-        f"topic:ai pushed:>{since_hot} stars:>1000", "hot",
-        f"topic:agent pushed:>{since_hot} stars:>1000", "hot",
-        f"ai skill pushed:>{since_hot} stars:>1000", "hot",
+        f"topic:ai pushed:>{since_hot} stars:>1000 created:>{since_created}", "hot",
+        f"topic:agent pushed:>{since_hot} stars:>1000 created:>{since_created}", "hot",
+        f"ai skill pushed:>{since_hot} stars:>1000 created:>{since_created}", "hot",
         f"topic:ai created:>{since_new} stars:>1000", "new",
     ]
     for i in range(0, len(queries), 2):
@@ -95,6 +99,15 @@ def fetch_github(days=4):
                                     + urllib.parse.quote(q) + "&sort=stars&order=desc&per_page=12",
                                     headers={"Accept": "application/vnd.github+json"}))
             for it in d.get("items", []):
+                # 兜底：按 created_at 过滤老项目（查询窗口失效时保证排除）
+                created = it.get("created_at", "")
+                if created:
+                    try:
+                        c = datetime.fromisoformat(created.replace("Z", "+00:00")).replace(tzinfo=None)
+                        if c < cutoff:
+                            continue
+                    except Exception:
+                        pass
                 items.append({
                     "title": it["full_name"], "url": it["html_url"],
                     "desc": (it.get("description") or "")[:140],
@@ -133,8 +146,19 @@ def fetch_exa():
                 continue
             stars_m = re.search(r"Stars:\s*([\d,]+)", blk)
             stars = int(stars_m.group(1).replace(",", "")) if stars_m else 0
-            if "github.com" in url and stars and stars < 1000:
-                continue  # GitHub 项目高星过滤
+            if "github.com" in url:
+                # GitHub 项目统一严格把关：stars≥1000 且创建 60 天内（排除老牌热门）
+                if stars and stars < 1000:
+                    continue
+                created_m = re.search(r"Created:\s*([\d-]+)", blk)
+                if not created_m:
+                    continue  # 解析不到创建日期的一律不收，GitHub 项目由 fetch_github 严格收录
+                try:
+                    c = datetime.strptime(created_m.group(1)[:10], "%Y-%m-%d")
+                    if c < datetime.now() - timedelta(days=60):
+                        continue
+                except Exception:
+                    continue
             # desc：取 Highlights 中第一条 >20 字符的正文行
             desc = ""
             for ln in blk.splitlines():
