@@ -247,32 +247,34 @@ def read_dashscope_key():
     return None
 
 
-def enrich_zh(items):
-    """批量生成中文简介 zh_desc + 收录理由 reason（DashScope qwen-turbo）。
-    失败/无 key 时降级：zh_desc=原 desc，reason=默认。"""
+def enrich_zh(items, batch_size=20):
+    """批量生成中文简介 zh_desc + 收录理由 reason（DashScope qwen-plus）。
+    小批量+重试；某批失败则该批降级用原文，不影响其他批。"""
     if not items:
         return items
     key = read_dashscope_key()
     if not key:
         print("  [警告] 无 DASHSCOPE_API_KEY，跳过中文简介（降级用原文）")
         for it in items:
-            it["zh_desc"] = (it.get("desc") or "")[:60]
+            it["zh_desc"] = (it.get("desc") or "")[:200]
             it["reason"] = "高热度/高价值内容"
         return items
 
-    payload = [{"title": it["title"], "desc": it.get("desc", "")[:140],
-                "platform": it["platform"], "extra": it.get("extra", "")} for it in items]
-    prompt = (
-        "你是AI资讯整理助手。输入JSON数组，每项含 title/desc/platform/extra（desc可能为空，可能为英文）。"
-        "为每项输出：zh_desc=中文简介(≤60字，把desc翻译成中文，desc为空则根据title概括)；"
-        "reason=收录理由(≤40字，结合热度/新颖性/实用性说明为什么值得关注，口语化中文)。"
-        "严格输出JSON对象{\"items\":[{\"zh_desc\":\"...\",\"reason\":\"...\"}]}，与输入一一对应，不要任何多余文字。"
-    )
-    body = {"model": "qwen-turbo", "messages": [
-        {"role": "system", "content": prompt},
-        {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
-    ], "response_format": {"type": "json_object"}}
-    try:
+    def _one_batch(batch):
+        payload = [{"title": it["title"], "desc": it.get("desc", "")[:140],
+                    "platform": it["platform"], "extra": it.get("extra", "")} for it in batch]
+        prompt = (
+            "你是AI资讯整理助手。输入JSON数组，每项含 title/desc/platform/extra（desc可能为空，可能为英文）。"
+            "为每项输出：zh_desc=中文简介，**必须写满80个汉字以上（150字左右最佳）**——把desc翻译扩展成通顺的中文介绍，"
+            "desc为空则根据title/extra扩写，说清楚这个项目/内容是什么、核心功能、解决什么问题；"
+            "reason=收录理由，**必须写满30个汉字以上（50字左右最佳）**——结合热度/新颖性/实用性/技术价值说明为什么值得关注，口语化中文，不要说空话。"
+            "字数不达标视为不合格，宁长勿短。"
+            "严格输出JSON对象{\"items\":[{\"zh_desc\":\"...\",\"reason\":\"...\"}]}，与输入一一对应，不要任何多余文字。"
+        )
+        body = {"model": "qwen-plus", "messages": [
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+        ], "response_format": {"type": "json_object"}}
         req = urllib.request.Request(
             "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
             data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
@@ -287,18 +289,32 @@ def enrich_zh(items):
         parsed = json.loads(content)
         if isinstance(parsed, dict):
             parsed = parsed.get("items") or parsed.get("data") or []
-        ok = 0
-        for it, en in zip(items, parsed):
+        for it, en in zip(batch, parsed):
             if isinstance(en, dict):
-                it["zh_desc"] = str(en.get("zh_desc") or it.get("desc") or "")[:60]
-                it["reason"] = str(en.get("reason") or "高热度/高价值内容")[:40]
-                ok += 1
-        print(f"  [中文简介] 生成 {ok}/{len(items)} 条")
-    except Exception as e:
-        print(f"  [中文简介] API 失败，降级用原文: {e}")
-        for it in items:
-            it["zh_desc"] = (it.get("desc") or "")[:60]
-            it["reason"] = "高热度/高价值内容"
+                it["zh_desc"] = str(en.get("zh_desc") or it.get("desc") or "")[:200]
+                it["reason"] = str(en.get("reason") or "高热度/高价值内容")[:80]
+
+    ok_total = 0
+    for start in range(0, len(items), batch_size):
+        batch = items[start:start + batch_size]
+        done = False
+        for attempt in range(3):
+            try:
+                _one_batch(batch)
+                done = True
+                break
+            except Exception as e:
+                print(f"  [中文简介] 批次{start//batch_size+1} 第{attempt+1}次失败: {e}")
+                import time
+                time.sleep(3 * (attempt + 1))
+        if not done:
+            print(f"  [中文简介] 批次{start//batch_size+1} 重试3次仍失败，该批降级用原文")
+            for it in batch:
+                it["zh_desc"] = (it.get("desc") or "")[:200]
+                it["reason"] = "高热度/高价值内容"
+        else:
+            ok_total += len(batch)
+    print(f"  [中文简介] 成功 {ok_total}/{len(items)} 条")
     return items
 
 

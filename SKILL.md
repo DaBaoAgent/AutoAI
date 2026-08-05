@@ -241,7 +241,7 @@ cd D:\@kaifa\autoai
    - B站（bili-cli）：搜索「AI 开源」「AI 工具」最新视频，播放量 ≥2000 过滤
    - V2EX：热门主题（AI 过滤，剔除 promotions 推广节点）
    - Hacker News：topstories（AI 过滤）
-2. **中文简介 + 收录理由**（v3.1）：DashScope qwen-turbo 批量生成 `zh_desc`（≤60字中文简介）+ `reason`（≤40字收录理由），key 读 `HERMES_HOME/.env` 的 `DASHSCOPE_API_KEY`（走代理 15715）；API 失败降级用原文
+2. **中文简介 + 收录理由**（v3.1）：DashScope qwen-plus 分批(每批20条)+重试 批量生成 `zh_desc`（**≥80字**中文简介，含功能/解决的问题）+ `reason`（**≥30字**收录理由，含热度/新颖性/实用价值），key 读 `HERMES_HOME/.env` 的 `DASHSCOPE_API_KEY`（走代理 15715）；某批失败降级用原文，不影响其他批
 3. **入库**：`source_type="agent-reach"`，`source_id="agent-reach-daily-YYYY-MM-DD"`，标题/中文简介/收录理由/链接分块
 4. **HTML 看板**：`data/tmp/agent_reach_daily_YYYY-MM-DD.html`（🔥开源项目 / 💡优质技能 / 📰AI新闻 三区卡片，每卡片含中文简介 + 📌收录理由）
 5. **发邮件**：send-email skill `--html` 发送到 QQ 邮箱
