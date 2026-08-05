@@ -36,6 +36,10 @@ for p in [os.path.join(os.environ.get("APPDATA", ""), "npm", "mcporter"), "mcpor
 
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 
+# 本机系统代理（V2EX/Exa/B站等国内受限渠道需要），脚本内自足不依赖调用方
+os.environ.setdefault("HTTP_PROXY", "http://127.0.0.1:15715")
+os.environ.setdefault("HTTPS_PROXY", "http://127.0.0.1:15715")
+
 AI_KEYWORDS = re.compile(
     r"(?i)(\bai\b|人工智能|大模型|llm|agent|智能体|skill|技能|codex|claude|chatgpt|openai|"
     r"gemini|github|开源|vibe.?coding|comfyui|模型|aigc|deepseek|kimi|gpt|"
