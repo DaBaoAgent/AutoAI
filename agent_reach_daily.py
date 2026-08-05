@@ -75,18 +75,17 @@ def run_cmd(cmd, timeout=90):
 
 # ---------- 各渠道采集 ----------
 
-def fetch_github(days=1):
-    """AI 开源项目：当天新建（GitHub search 索引延迟 ~2天，用 3 天窗口）
-    + 今日活跃项目（pushed:>昨天，博主常推这类高星项目）"""
+def fetch_github(days=4):
+    """高星 AI 开源项目（stars:>1000）：近期活跃（pushed 索引延迟~3天，窗口 4 天）
+    + 3 天窗口新建（捕捉爆发的新项目）"""
     items = []
     since_new = (datetime.now() - timedelta(days=3)).strftime("%Y-%m-%d")
     since_hot = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
     queries = [
-        f"topic:ai created:>{since_new}", "new",
-        f"topic:agent created:>{since_new}", "new",
-        f"ai skill created:>{since_new}", "new",
-        f"topic:ai pushed:>{since_hot} stars:>200", "hot",
-        f"topic:agent pushed:>{since_hot} stars:>200", "hot",
+        f"topic:ai pushed:>{since_hot} stars:>1000", "hot",
+        f"topic:agent pushed:>{since_hot} stars:>1000", "hot",
+        f"ai skill pushed:>{since_hot} stars:>1000", "hot",
+        f"topic:ai created:>{since_new} stars:>1000", "new",
     ]
     for i in range(0, len(queries), 2):
         q, kind = queries[i], queries[i + 1]
@@ -108,7 +107,8 @@ def fetch_github(days=1):
 
 
 def fetch_exa():
-    """Exa 搜索：AI 新闻 / 博主推荐 / 技能教程（mcporter 文本输出正则解析）"""
+    """Exa 搜索：AI 新闻 / 博主推荐 / 技能教程（mcporter 文本输出逐块解析）
+    GitHub 仓库要求 stars>=1000，新闻/文章类保留"""
     items = []
     if not MCPORTER:
         print("    mcporter 不可用，跳过 Exa")
@@ -122,15 +122,32 @@ def fetch_exa():
     ]
     for q, cat in queries:
         # npm 全局 bin 是 .cmd shim，需经 cmd.exe 执行
-        out = run_cmd(["cmd", "/c", MCPORTER, "call", "exa.web_search_exa", f"query={q}", "numResults=4"])
-        blocks = re.findall(r"Title:\s*(.+?)\nURL:\s*(\S+)", out)
-        for title, url in blocks:
-            if is_ai(title):
-                items.append({
-                    "title": title.strip()[:120], "url": url.strip(),
-                    "desc": "", "platform": "Exa",
-                    "heat": "", "extra": f"Exa·{q[:18]}", "category": cat,
-                })
+        out = run_cmd(["cmd", "/c", MCPORTER, "call", "exa.web_search_exa", f"query={q}", "numResults=5"])
+        for blk in re.split(r"(?=^Title:)", out, flags=re.M):
+            m = re.match(r"Title:\s*(.+?)\nURL:\s*(\S+)", blk)
+            if not m:
+                continue
+            title, url = m.group(1).strip(), m.group(2).strip()
+            if not is_ai(title):
+                continue
+            stars_m = re.search(r"Stars:\s*([\d,]+)", blk)
+            stars = int(stars_m.group(1).replace(",", "")) if stars_m else 0
+            if "github.com" in url and stars and stars < 1000:
+                continue  # GitHub 项目高星过滤
+            # desc：取 Highlights 中第一条 >20 字符的正文行
+            desc = ""
+            for ln in blk.splitlines():
+                s = ln.strip()
+                if (s and not s.startswith(("Title:", "URL:", "Published:", "Author:", "Highlights:"))
+                        and not s.startswith(("-", "#", "*", ">")) and len(s) > 20):
+                    desc = s[:140]
+                    break
+            items.append({
+                "title": title[:120], "url": url.strip(),
+                "desc": desc, "platform": "Exa",
+                "heat": f"⭐{stars}" if stars else "",
+                "extra": f"Exa·{q[:14]}", "category": cat,
+            })
     return items
 
 
@@ -147,6 +164,8 @@ def fetch_bilibili():
             d = yaml.safe_load(out) or {}
             for r in d.get("data") or []:
                 title = r.get("title", "")
+                if r.get("play", 0) < 2000:
+                    continue  # 低播放搬运/噪音过滤
                 if is_ai(title):
                     items.append({
                         "title": title.strip()[:120],
@@ -208,6 +227,80 @@ def fetch_hn():
     return items
 
 
+# ---------- 中文简介 + 收录理由（DashScope qwen） ----------
+
+def read_dashscope_key():
+    """从 HERMES_HOME/.env（或 ~/.hermes/.env）读 DASHSCOPE_API_KEY"""
+    candidates = [
+        os.path.join(os.environ.get("HERMES_HOME", r"C:\Users\xxx13\AppData\Local\hermes"), ".env"),
+        os.path.expanduser("~/.hermes/.env"),
+    ]
+    for p in candidates:
+        try:
+            if os.path.exists(p):
+                for line in open(p, encoding="utf-8", errors="replace"):
+                    if line.startswith("DASHSCOPE_API_KEY="):
+                        return line.split("=", 1)[1].strip()
+        except Exception:
+            continue
+    return None
+
+
+def enrich_zh(items):
+    """批量生成中文简介 zh_desc + 收录理由 reason（DashScope qwen-turbo）。
+    失败/无 key 时降级：zh_desc=原 desc，reason=默认。"""
+    if not items:
+        return items
+    key = read_dashscope_key()
+    if not key:
+        print("  [警告] 无 DASHSCOPE_API_KEY，跳过中文简介（降级用原文）")
+        for it in items:
+            it["zh_desc"] = (it.get("desc") or "")[:60]
+            it["reason"] = "高热度/高价值内容"
+        return items
+
+    payload = [{"title": it["title"], "desc": it.get("desc", "")[:140],
+                "platform": it["platform"], "extra": it.get("extra", "")} for it in items]
+    prompt = (
+        "你是AI资讯整理助手。输入JSON数组，每项含 title/desc/platform/extra（desc可能为空，可能为英文）。"
+        "为每项输出：zh_desc=中文简介(≤60字，把desc翻译成中文，desc为空则根据title概括)；"
+        "reason=收录理由(≤40字，结合热度/新颖性/实用性说明为什么值得关注，口语化中文)。"
+        "严格输出JSON对象{\"items\":[{\"zh_desc\":\"...\",\"reason\":\"...\"}]}，与输入一一对应，不要任何多余文字。"
+    )
+    body = {"model": "qwen-turbo", "messages": [
+        {"role": "system", "content": prompt},
+        {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+    ], "response_format": {"type": "json_object"}}
+    try:
+        req = urllib.request.Request(
+            "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+            data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
+        # 本机直连 dashscope 偶发 SSL 握手超时，走系统代理最稳
+        proxy = urllib.request.ProxyHandler(
+            {"http": "http://127.0.0.1:15715", "https": "http://127.0.0.1:15715"})
+        opener = urllib.request.build_opener(proxy)
+        resp = opener.open(req, timeout=180)
+        d = json.loads(resp.read().decode("utf-8"))
+        content = d["choices"][0]["message"]["content"]
+        parsed = json.loads(content)
+        if isinstance(parsed, dict):
+            parsed = parsed.get("items") or parsed.get("data") or []
+        ok = 0
+        for it, en in zip(items, parsed):
+            if isinstance(en, dict):
+                it["zh_desc"] = str(en.get("zh_desc") or it.get("desc") or "")[:60]
+                it["reason"] = str(en.get("reason") or "高热度/高价值内容")[:40]
+                ok += 1
+        print(f"  [中文简介] 生成 {ok}/{len(items)} 条")
+    except Exception as e:
+        print(f"  [中文简介] API 失败，降级用原文: {e}")
+        for it in items:
+            it["zh_desc"] = (it.get("desc") or "")[:60]
+            it["reason"] = "高热度/高价值内容"
+    return items
+
+
 # ---------- 看板 HTML ----------
 
 HTML_TMPL = """<!DOCTYPE html>
@@ -239,6 +332,7 @@ CARD = """    <div style="background:#232b3d;border-radius:10px;padding:12px 14p
         <span style="color:#8b949e;font-size:12px;margin-left:6px">{platform}</span></div>
       <div style="color:#8b949e;font-size:12px;margin-top:4px">{extra}{heat}</div>
       {desc_html}
+      {reason_html}
     </div>"""
 
 
@@ -259,11 +353,15 @@ def build_html(items, date):
         for i, it in enumerate(sel[:25], 1):
             heat = f" · {it['heat']}" if it.get("heat") else ""
             desc_html = ""
-            if it.get("desc"):
-                desc_html = f'<div style="color:#9da7b3;font-size:12px;margin-top:4px">{it["desc"]}</div>'
+            if it.get("zh_desc"):
+                desc_html = f'<div style="color:#9da7b3;font-size:12px;margin-top:4px">{it["zh_desc"]}</div>'
+            reason_html = ""
+            if it.get("reason"):
+                reason_html = f'<div style="color:#7ee787;font-size:12px;margin-top:3px">📌 收录理由：{it["reason"]}</div>'
             cards.append(CARD.format(url=it["url"], title=it["title"],
                                      platform=it["platform"], extra=it["extra"] + heat,
-                                     heat="", desc_html=desc_html, color=color))
+                                     heat="", desc_html=desc_html,
+                                     reason_html=reason_html, color=color))
         section_html.append(SECTION_HEAD.format(emoji=emoji, name=name, desc=desc,
                                                 count=len(sel), cards="\n".join(cards) if cards else
                                                 "    <div style='color:#6e7681;font-size:13px'>今日暂无</div>"))
@@ -298,9 +396,12 @@ def main():
             uniq.append(it)
     print(f"  合计 {len(all_items)} → 去重后 {len(uniq)} 条")
 
+    # 中文简介 + 收录理由
+    enrich_zh(uniq)
+
     # 入库
     lines = [f"# AutoAI 每日 AI 看板 — {today}", ""]
-    lines.append("> 数据源：Agent-Reach（GitHub / Exa / B站 / V2EX / Hacker News）当天最新。")
+    lines.append("> 数据源：Agent-Reach（GitHub / Exa / B站 / V2EX / Hacker News）当天最新，GitHub 项目要求 stars≥1000。")
     lines.append("")
     by_cat = {}
     for it in uniq:
@@ -311,7 +412,9 @@ def main():
         lines.append("")
         for it in items[:20]:
             lines.append(f"- [{it['title']}]({it['url']}) — {it['platform']} {it['extra']}")
-            detail.append(f"{cat} {it['title']}（{it['platform']} {it['extra']}）：{it['desc'] or '无描述'}，链接 {it['url']}")
+            detail.append(f"{cat} {it['title']}（{it['platform']} {it['extra']}）："
+                          f"{it.get('zh_desc') or it.get('desc') or '无描述'}。"
+                          f"收录理由：{it.get('reason', '')}，链接 {it['url']}")
         lines.append("")
     text = "\n".join(lines)
     source_id = f"agent-reach-daily-{today}"

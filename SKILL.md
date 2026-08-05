@@ -236,14 +236,15 @@ cd D:\@kaifa\autoai
 
 脚本自动：
 1. **Agent-Reach 全平台采集**（无登录态渠道）：
-   - GitHub API：当天新建 AI/Agent 项目（3天窗口，search 索引延迟）+ 今日活跃高星项目（pushed:>昨天 stars:>200）
-   - Exa（mcporter）：AI 新闻 / 博主推荐开源 / 技能教程 5 组查询
-   - B站（bili-cli）：搜索「AI 开源」「AI 工具」最新视频（博主推荐）
+   - GitHub API：**高星过滤 stars:>1000**；近期活跃（pushed 窗口 4 天，索引延迟 ~3 天）+ 新建爆发项目（3 天窗口）
+   - Exa（mcporter）：AI 新闻 / 博主推荐开源 / 技能教程 5 组查询；GitHub 仓库要求 stars≥1000（解析 Highlights 的 Stars 字段）
+   - B站（bili-cli）：搜索「AI 开源」「AI 工具」最新视频，播放量 ≥2000 过滤
    - V2EX：热门主题（AI 过滤，剔除 promotions 推广节点）
    - Hacker News：topstories（AI 过滤）
-2. **入库**：`source_type="agent-reach"`，`source_id="agent-reach-daily-YYYY-MM-DD"`，标题/链接/热度/描述分块
-3. **HTML 看板**：`data/tmp/agent_reach_daily_YYYY-MM-DD.html`（🔥开源项目 / 💡优质技能 / 📰AI新闻 三区卡片）
-4. **发邮件**：send-email skill `--html` 发送到 QQ 邮箱
+2. **中文简介 + 收录理由**（v3.1）：DashScope qwen-turbo 批量生成 `zh_desc`（≤60字中文简介）+ `reason`（≤40字收录理由），key 读 `HERMES_HOME/.env` 的 `DASHSCOPE_API_KEY`（走代理 15715）；API 失败降级用原文
+3. **入库**：`source_type="agent-reach"`，`source_id="agent-reach-daily-YYYY-MM-DD"`，标题/中文简介/收录理由/链接分块
+4. **HTML 看板**：`data/tmp/agent_reach_daily_YYYY-MM-DD.html`（🔥开源项目 / 💡优质技能 / 📰AI新闻 三区卡片，每卡片含中文简介 + 📌收录理由）
+5. **发邮件**：send-email skill `--html` 发送到 QQ 邮箱
 
 ### 前置条件
 
