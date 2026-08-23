@@ -1,0 +1,54 @@
+# AutoAI 每日看板配置（v4）
+# 修改后无需重启：下次运行自动读取。环境变量优先：BILI_CMD / MCPORTER_CMD 可覆盖 cli。
+
+proxy: "http://127.0.0.1:15715"
+user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+
+fetch:
+  timeout: 30
+  max_bytes: 5242880          # 单响应上限 5MB
+
+deepseek:
+  model: "deepseek-chat"      # 不用 deepseek-v4-flash（推理模型，输出先烧 reasoning tokens）
+  workers: 6
+  retries: 3
+  max_tokens: 500
+  temperature: 0.6
+  price_input_per_1m: 2.0     # 元/百万 tokens（仅成本估算，非计费）
+  price_output_per_1m: 8.0
+
+github:
+  use_trending_parse: false   # true=走 trending HTML 正则（脆弱）；false=Search API 主通道
+  pool_size: 80
+  curate_novel: 10
+  curate_work: 10
+
+hn:
+  top_n: 8
+  min_score: 40
+  scan_top: 80
+  workers: 8                  # item 抓取并发
+
+v2ex:
+  top_n: 8
+
+exa:
+  num: 4
+  timeout: 120
+  ai_queries:
+    - "new AI model release this week 2026"
+    - "best new open source AI project"
+  doc_queries:
+    - "new documentary 2026 must watch"
+    - "bilibili popular documentary 2026"
+
+bili:
+  cli: "bili"                 # 或写全路径；环境变量 BILI_CMD 可覆盖
+  hot_n: 40
+  doc_hot_min_play: 20000     # strict 关键词（纪录片/纪实/人文…）最低播放
+  doc_soft_min_play: 50000    # soft 宽泛词（历史/美食/战争…）需更高播放，防混入
+  ai_min_play: 2000
+  search_top_n: 5
+
+mcporter:
+  cli: "mcporter"             # 环境变量 MCPORTER_CMD 可覆盖
