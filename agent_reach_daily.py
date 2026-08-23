@@ -700,9 +700,123 @@ def fetch_bili_ai():
     return len(out)
 
 
+# ---------------------------------------------------------------- 精选有趣项目（固定注入，手写中文简介）
+# 用户点名方向：像素办公室/语音陪伴/wifi雷达/世界模型/手机端侧LLM + 趣味项目。
+# zh_desc 手写≥80字、reason≥30字 → enrich_zh 跳过（只处理缺 zh_desc 的），不烧 DeepSeek token。
+CURATED_FUN = [
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "ringhyacinth/Star-Office-UI",
+     "url": "https://github.com/ringhyacinth/Star-Office-UI", "desc": "像素风 AI 办公室看板",
+     "lang": "", "week": "", "stars_total": "7443",
+     "zh_desc": "一个像素风格的AI办公室看板，能把AI助手的工作状态实时可视化：谁在做什么、昨天做了什么、现在是否在线一目了然。支持多Agent协作、中英日三语界面、AI生图装修房间和桌面宠物模式，与OpenClaw深度集成时体验最佳，也可独立部署当状态看板使用，MIT协议开源。",
+     "reason": "像素风治愈系看板，把枯燥的Agent工作状态变成可爱的小人办公室，可玩性极高，社区热度持续攀升。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "pixel-agents-hq/pixel-agents",
+     "url": "https://github.com/pixel-agents-hq/pixel-agents", "desc": "终端AI编程Agent变成像素小人办公室",
+     "lang": "", "week": "", "stars_total": "8999",
+     "zh_desc": "把终端里正在运行的AI编程Agent变成像素小人，在迷你办公室里走来走去：写代码时坐桌前打字、搜索时看书、卡住等输入时会向你挥手示意。支持铺设地板墙壁、摆放家具、养像素宠物、64×64格大办公室，布局可导出导入JSON，让AI开发过程变得直观又有趣。",
+     "reason": "程序员视角的趣味可视化，AI干活看得见摸得着，桌面宠物式交互极其解压，创意与实用兼备。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "pipecat-ai/pipecat",
+     "url": "https://github.com/pipecat-ai/pipecat", "desc": "开源实时语音Agent框架",
+     "lang": "", "week": "", "stars_total": "14536",
+     "zh_desc": "由Daily公司维护的开源实时语音Agent框架，用于构建能听会说、支持随时打断和低延迟对话的语音AI应用，也可做多模态实时应用。提供开箱即用的语音流水线组件，支持WebRTC、流式STT/TTS与主流大模型接入，星标超1.4万，是语音陪伴、AI客服类产品的主流底座。",
+     "reason": "语音Agent领域的事实标准框架之一，生态活跃，想做语音陪伴或客服产品可以直接站在巨人肩膀上。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "leon-ai/leon",
+     "url": "https://github.com/leon-ai/leon", "desc": "开源个人AI语音助手",
+     "lang": "", "week": "", "stars_total": "17455",
+     "zh_desc": "开源的个人AI语音助手Leon，支持语音交互、文本对话和自动化技能扩展，强调隐私与离线，不依赖商业云服务即可运行。内置Python/Node双语言技能开发接口，可自定义提醒、查询、自动化等技能，17k+星标，适合喜欢自己动手折腾的极客搭建专属私人管家。",
+     "reason": "老牌开源语音助手，主打隐私与可扩展，给想要自托管陪伴式助手的用户一个可靠选择。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "ruvnet/ruview",
+     "url": "https://github.com/ruvnet/ruview", "desc": "WiFi信号变雷达：穿墙感知存在/呼吸/姿态",
+     "lang": "", "week": "", "stars_total": "91403",
+     "zh_desc": "把普通WiFi信号变成雷达的开源平台：利用ESP32传感器采集信道状态信息(CSI)，就能穿墙感知人体存在、呼吸频率、动作姿态，甚至做生命体征监测，全程不拍一张照片、不装摄像头，天然规避隐私法规。2026年发布后迅速爆火，星标超9万，被视为WiFi感知领域的现象级项目。",
+     "reason": "WiFi变雷达、穿墙看呼吸，硬核又科幻的玩法，隐私合规方向极具想象力，开源社区热议焦点。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "Saad-Imtiaz/WiFi-Sense",
+     "url": "https://github.com/Saad-Imtiaz/WiFi-Sense", "desc": "ESP32-S3 WiFi被动雷达：人体存在检测",
+     "lang": "", "week": "", "stars_total": "3",
+     "zh_desc": "基于ESP32-S3的WiFi被动雷达小项目：只靠一个开发板和路由器，利用RSSI与信道状态信息(CSI)就能检测房间里有没有人、人在动还是静止、大概在什么位置，无需任何额外传感器。自带Web界面实时展示探测结果，Arduino工程开箱即用，是极客DIY智能家居感应器的绝佳入门。",
+     "reason": "几十块钱的硬件就能做人体存在感知，DIY门槛极低，玩智能家居或安防监控非常实用。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "eloialonso/diamond",
+     "url": "https://github.com/eloialonso/diamond", "desc": "DIAMOND：扩散世界模型当游戏引擎",
+     "lang": "", "week": "", "stars_total": "2096",
+     "zh_desc": "NeurIPS 2024 Spotlight论文的官方实现，用扩散模型当游戏世界的模拟器：给定玩家动作和之前画面，直接预测下一帧，让强化学习智能体能在纯想象的世界里训练。开箱即可游玩Atari和CS:GO的预训练世界模型，直观感受AI如何在脑中构建可交互的环境。",
+     "reason": "世界模型领域的代表作，扩散模型当游戏引擎的玩法极客又震撼，一跑就能体验AI做梦。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "Robbyant/lingbot-world",
+     "url": "https://github.com/Robbyant/lingbot-world", "desc": "开源世界模型：分钟级场景记忆+动作可控",
+     "lang": "", "week": "", "stars_total": "4385",
+     "zh_desc": "2026年初发布的开源世界模型项目，用DiT+MoE架构对视频帧编码学习时空动态，通过自适应层归一化注入动作控制，号称能保持分钟级的场景记忆不漂移。支持文生视频、图生视频等多种玩法，在VBench等评测上表现亮眼，为开放世界模型研究提供了完整可复现的代码底座。",
+     "reason": "新一代开源世界模型代表，分钟级一致性与动作可控性是亮点，2026年世界模型赛道最值得关注项目。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "mlc-ai/mlc-llm",
+     "url": "https://github.com/mlc-ai/mlc-llm", "desc": "把LLM编译进手机/浏览器/嵌入式设备",
+     "lang": "", "week": "", "stars_total": "23085",
+     "zh_desc": "通用大模型部署引擎，核心思路是用机器学习编译技术把LLM编译成可在手机、平板、浏览器、嵌入式设备上高效运行的代码，支持iOS/Android/Web全平台，无需服务器即可在端侧流畅运行Qwen、Llama等主流模型。23k+星标，是把大模型塞进手机的事实标准方案之一。",
+     "reason": "手机跑大模型的最成熟开源路线，隐私、离线、低延迟全都要，端侧AI时代的核心基建。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "ggml-org/llama.cpp",
+     "url": "https://github.com/ggml-org/llama.cpp", "desc": "本地/手机跑LLM的事实标准推理引擎",
+     "lang": "", "week": "", "stars_total": "125308",
+     "zh_desc": "最流行的本地大模型推理引擎，用C/C++实现并高度优化，GGUF量化格式让几十亿参数模型也能跑在普通电脑甚至手机上，支持CPU/GPU/NPU各种硬件，生态覆盖桌面、Android、iOS、浏览器。12.5万星标，从边缘设备到数据中心的端侧推理事实标准。",
+     "reason": "端侧AI绕不开的基石项目，想在本机或手机跑任何开源模型，第一个装的就是它。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "openclaw/openclaw",
+     "url": "https://github.com/openclaw/openclaw", "desc": "2026现象级开源个人AI助手（养龙虾）",
+     "lang": "", "week": "", "stars_total": "387268",
+     "zh_desc": "2026年现象级开源个人AI助手，跨平台全终端运行，强调本地优先、能替你执行真实任务，像养一只龙虾一样陪着你干活。60天狂揽25万星、总星标超38万，创下GitHub历史增速纪录，把个人专属AI的概念推向大众，是今年开源圈绕不开的话题中心。",
+     "reason": "GitHub历史上增长最快的开源项目，现象级热度，个人AI助手赛道的绝对王者。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "Jiayi-Pan/TinyZero",
+     "url": "https://github.com/Jiayi-Pan/TinyZero", "desc": "最小成本复现DeepSeek-R1-Zero",
+     "lang": "", "week": "", "stars_total": "13224",
+     "zh_desc": "DeepSeek-R1-Zero的最小复现项目：基于veRL只用纯强化学习、不靠任何监督微调，就让3B基础模型在倒计时、乘法等任务上自主涌现出自我验证和搜索能力。训练成本极低（约224元/4张A800/8小时），代码精简到极致，是理解RL调出推理能力的教科书式代码。",
+     "reason": "花几百块钱就能亲眼见证推理能力涌现，极客教育的典范，复现R1-Zero的社区首选。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "hacksider/Deep-Live-Cam",
+     "url": "https://github.com/hacksider/Deep-Live-Cam", "desc": "一张照片实时换脸/Deepfake工具",
+     "lang": "", "week": "", "stars_total": "96092",
+     "zh_desc": "一键实时换脸工具：只需一张人脸照片就能在摄像头视频流中实时替换目标人脸，同时支持视频文件换脸和Deepfake生成，全程本地处理、无需高端显卡。9.6万星标，因其极低的门槛和惊艳效果风靡全网，也持续引发关于深度伪造技术的伦理讨论。",
+     "reason": "实时换脸门槛降到一张照片级别，娱乐性拉满，是生成式AI最出圈的消费级应用之一。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "rasbt/LLMs-from-scratch",
+     "url": "https://github.com/rasbt/LLMs-from-scratch", "desc": "从零手搓一个ChatGPT级LLM",
+     "lang": "", "week": "", "stars_total": "103548",
+     "zh_desc": "《Build a Large Language Model from Scratch》一书的官方代码库，手把手教你从零实现一个类ChatGPT的大语言模型：数据准备、注意力机制、预训练、微调、指令对齐全流程都有配套PyTorch代码和Jupyter教程，10万+星标，被誉为LLM入门第一课。",
+     "reason": "从零到一吃透Transformer和大模型训练管线，理论实践结合的标杆教程，学习价值极高。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "TauricResearch/TradingAgents",
+     "url": "https://github.com/TauricResearch/TradingAgents", "desc": "多Agent模拟华尔街投行团队炒股",
+     "lang": "", "week": "", "stars_total": "99490",
+     "zh_desc": "多智能体LLM金融交易框架，模拟华尔街投行团队分工：基本面分析师、情绪分析师、新闻分析师、基金经理、风控官等角色各司其职，在财报发布周期内协同研究、辩论并给出交易决策，99k+星标，是AI Agent加金融方向最火的实践项目。",
+     "reason": "把多Agent协作玩出花，AI投资委员会概念新颖有趣，量化爱好者必看的明星项目。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "mindverse/Second-Me",
+     "url": "https://github.com/mindverse/Second-Me", "desc": "训练一个自己的AI数字分身",
+     "lang": "", "week": "", "stars_total": "15669",
+     "zh_desc": "训练你自己的AI分身：通过分层记忆模型(HMM)和Me-Alignment算法，让AI学习你的思维方式和偏好，成为能代表你长期记忆、帮你做决策的数字自我。完全本地部署、数据不出设备，Apache-2.0开源，15k+星标，是数字永生概念的最佳实践之一。",
+     "reason": "训练一个自己的AI的梦想成真，本地部署隐私可控，数字分身赛道的标杆项目。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "letta-ai/letta",
+     "url": "https://github.com/letta-ai/letta", "desc": "有长期记忆的有状态Agent平台（原MemGPT）",
+     "lang": "", "week": "", "stars_total": "24374",
+     "zh_desc": "由MemGPT进化而来的有状态Agent平台，核心是给AI装上长期记忆：用Agent File(.af)格式保存状态、跨平台迁移、可版本控制，还提供可视化开发环境实时查看Agent的内存与工具调用，原生支持MCP，直击AI对话转头就忘的痛点。",
+     "reason": "长期记忆是Agent落地的关键短板，Letta的.af格式与可视化调试独树一帜，24k星证实力。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "Wan-Video/Wan2.1",
+     "url": "https://github.com/Wan-Video/Wan2.1", "desc": "阿里通义万相开源视频生成大模型",
+     "lang": "", "week": "", "stars_total": "16883",
+     "zh_desc": "阿里通义万相的开源视频生成大模型，支持文生视频、图生视频、多分辨率生成和真实感视频创作，参数规模与效果对标商用闭源模型，模型权重和推理代码全部开放，16.8k星标，是国内开源视频生成领域最重磅的选手之一。",
+     "reason": "国产开源视频生成天花板，做短视频、纪录片素材生成非常实用，可直接本地部署使用。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "2noise/ChatTTS",
+     "url": "https://github.com/2noise/ChatTTS", "desc": "会聊天、带情绪和笑声的对话式TTS",
+     "lang": "", "week": "", "stars_total": "39789",
+     "zh_desc": "专为日常对话场景设计的生成式语音模型，能输出自然、有情感起伏、带笑声和语气词的真人感语音，支持中英文混合与多说话人，比传统TTS更接近真人聊天。39k+星标，被广泛用于语音陪伴、播客、短视频配音等场景，本地即可部署。",
+     "reason": "最像真人聊天的开源TTS，情绪和语气词让配音有灵魂，内容创作者必备神器。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "OpenBMB/MiniCPM-V",
+     "url": "https://github.com/OpenBMB/MiniCPM-V", "desc": "手机端侧能跑的多模态大模型",
+     "lang": "", "week": "", "stars_total": "26219",
+     "zh_desc": "面壁智能推出的口袋级端侧多模态模型系列，几十亿参数就能在图像、视频、音频理解上逼近GPT-4V等大模型，可在手机、平板等端侧设备离线运行，支持图像问答、视频理解、OCR等任务，26k+星标，让普通小设备也能拥有大模型的眼睛。",
+     "reason": "手机端多模态理解天花板，与手机能跑的LLM主题完美呼应，端侧智能落地典范。"},
+]
+
+
+def fetch_curated_fun():
+    """固定注入精选有趣项目（不参与 GitHub 池策展，直接进 RAW_ITEMS）。"""
+    RAW_ITEMS.extend(CURATED_FUN)
+    return len(CURATED_FUN)
+
+
 # ---------------------------------------------------------------- Provider 注册表
 # 新增数据源：写一个 fetch_xxx() 返回条数，然后在这里注册一行即可。
 SOURCES = [
+    ("curated_fun", fetch_curated_fun, "精选有趣项目×20"),   # 固定注入，手写中文简介
     ("github", fetch_github_pool, "池→排除→策展"),   # 特殊：需要两步，见 main 处理
     ("hn", fetch_hn_ai, "Hacker News"),
     ("v2ex", fetch_v2ex_ai, "V2EX"),
@@ -964,6 +1078,7 @@ def main():
             log("  ⚠️ GitHub 池为空，跳过 GitHub 区")
 
         log("[2/4] AI 前沿动态...")
+        run_source("curated_fun", fetch_curated_fun)   # 精选有趣项目×20（固定注入，进 GitHub 区）
         run_source("hn", fetch_hn_ai)
         run_source("v2ex", fetch_v2ex_ai)
         run_source("exa_ai", fetch_exa_ai)
