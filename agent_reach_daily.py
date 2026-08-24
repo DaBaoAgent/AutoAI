@@ -846,7 +846,7 @@ def run_source(name, fn, *a):
 DS_PROMPT = (
     "你是中文科技内容编辑。为下面的条目撰写：\n"
     "1. zh_desc：≥80字的中文简介，讲清它是什么、解决什么问题、亮点是什么；\n"
-    "2. reason：≥30字的收录理由，说明为什么值得关注（热度/新颖性/实用价值）。\n"
+    "2. reason：≥20字的收录理由，说明为什么值得关注（热度/新颖性/实用价值）。\n"
     "只输出 JSON：{\"zh_desc\": \"...\", \"reason\": \"...\"}\n\n"
     "标题：{title}\n简介：{desc}\n链接：{url}"
 )
@@ -883,7 +883,7 @@ def call_deepseek(item):
             obj = json.loads(content)
             zh = str(obj.get("zh_desc", "")).strip()
             rn = str(obj.get("reason", "")).strip()
-            if len(zh) >= 40 and rn:
+            if len(zh) >= 40 and len(rn) >= 20:
                 return zh, rn
             last_err = f"内容不合格 len(zh)={len(zh)}"
         except Exception as e:
@@ -909,7 +909,8 @@ def enrich_zh(items, workers=None):
             res = f.result()
             if res:
                 it["zh_desc"] = res[0]
-                if not it.get("reason"):   # 保留策展给的入选理由（GitHub 区）
+                if not it.get("reason") or len(str(it.get("reason", ""))) < 20:
+                    # 收录理由 <20字 也重新生成（用户要求理由≥20字；GitHub 策展短句会被覆盖）
                     it["reason"] = res[1]
                 ok += 1
             if ok and ok % 20 == 0:
@@ -950,7 +951,7 @@ def card_html(items):
             f'<a class="card-title" href="{esc(it.get("url", ""))}" target="_blank">'
             f'{esc(it.get("title", ""))}</a></div>'
             f'{extra}</div>')
-    return "".join(out)
+    return f'<div class="cards">{"".join(out)}</div>'
 
 
 def build_html():
@@ -976,7 +977,8 @@ def build_html():
  h3{{font-size:14px;color:#f78166;margin:16px 0 8px}}
  .stat{{color:#8b93a7;font-size:12px;font-weight:normal;float:right}}
  a{{color:#4ea1ff;text-decoration:none}} a:hover{{text-decoration:underline}}
- .card{{background:#161b26;border:1px solid #232a38;border-radius:10px;padding:10px 14px;margin-bottom:10px}}
+ .card{{background:#161b26;border:1px solid #232a38;border-radius:10px;padding:10px 14px;width:calc(50% - 5px);box-sizing:border-box}}
+.cards{{display:flex;flex-wrap:wrap;gap:10px}}
  .card-head{{margin-bottom:4px}}
  .src{{display:inline-block;background:#232a38;color:#8b93a7;font-size:11px;border-radius:4px;padding:1px 7px;margin-right:8px}}
  .src.hot{{background:#2a2118;color:#f78166}}
