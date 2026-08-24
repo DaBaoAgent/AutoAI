@@ -257,10 +257,18 @@ def persist(conn, items, replace_day=False):
                               json.dumps(it, ensure_ascii=False), exist[0]))
                 n_upd += 1
         else:
-            conn.execute("""INSERT INTO items(date,platform,section,subgroup,title,url,
-                            desc,zh_desc,reason,score,lang,week,stars,dedup_key,raw)
-                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", row)
-            n_new += 1
+            try:
+                conn.execute("""INSERT INTO items(date,platform,section,subgroup,title,url,
+                                desc,zh_desc,reason,score,lang,week,stars,dedup_key,raw)
+                                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", row)
+                n_new += 1
+            except sqlite3.IntegrityError:
+                # 兜底：同日内撞键（罕见）→ 更新当日已有行，不丢数据
+                conn.execute("""UPDATE items SET zh_desc=COALESCE(?,zh_desc),
+                                reason=COALESCE(?,reason), raw=? WHERE dedup_key=? AND date=?""",
+                             (it.get("zh_desc") or None, it.get("reason") or None,
+                              json.dumps(it, ensure_ascii=False), key, TODAY))
+                n_upd += 1
     conn.commit()
     return n_new, n_upd
 
