@@ -721,7 +721,7 @@ CURATED_FUN = [
      "reason": "语音Agent领域的事实标准框架之一，生态活跃，想做语音陪伴或客服产品可以直接站在巨人肩膀上。"},
     {"platform": "精选", "section": "github", "subgroup": "novel", "title": "leon-ai/leon",
      "url": "https://github.com/leon-ai/leon", "desc": "开源个人AI语音助手",
-     "lang": "", "week": "", "stars_total": "17455",
+     "lang": "", "week": "", "stars_total": "17455", "win": "需WSL",
      "zh_desc": "开源的个人AI语音助手Leon，支持语音交互、文本对话和自动化技能扩展，强调隐私与离线，不依赖商业云服务即可运行。内置Python/Node双语言技能开发接口，可自定义提醒、查询、自动化等技能，17k+星标，适合喜欢自己动手折腾的极客搭建专属私人管家。",
      "reason": "老牌开源语音助手，主打隐私与可扩展，给想要自托管陪伴式助手的用户一个可靠选择。"},
     {"platform": "精选", "section": "github", "subgroup": "novel", "title": "ruvnet/ruview",
@@ -734,16 +734,16 @@ CURATED_FUN = [
      "lang": "", "week": "", "stars_total": "3",
      "zh_desc": "基于ESP32-S3的WiFi被动雷达小项目：只靠一个开发板和路由器，利用RSSI与信道状态信息(CSI)就能检测房间里有没有人、人在动还是静止、大概在什么位置，无需任何额外传感器。自带Web界面实时展示探测结果，Arduino工程开箱即用，是极客DIY智能家居感应器的绝佳入门。",
      "reason": "几十块钱的硬件就能做人体存在感知，DIY门槛极低，玩智能家居或安防监控非常实用。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "eloialonso/diamond",
-     "url": "https://github.com/eloialonso/diamond", "desc": "DIAMOND：扩散世界模型当游戏引擎",
-     "lang": "", "week": "", "stars_total": "2096",
-     "zh_desc": "NeurIPS 2024 Spotlight论文的官方实现，用扩散模型当游戏世界的模拟器：给定玩家动作和之前画面，直接预测下一帧，让强化学习智能体能在纯想象的世界里训练。开箱即可游玩Atari和CS:GO的预训练世界模型，直观感受AI如何在脑中构建可交互的环境。",
-     "reason": "世界模型领域的代表作，扩散模型当游戏引擎的玩法极客又震撼，一跑就能体验AI做梦。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "Robbyant/lingbot-world",
-     "url": "https://github.com/Robbyant/lingbot-world", "desc": "开源世界模型：分钟级场景记忆+动作可控",
-     "lang": "", "week": "", "stars_total": "4385",
-     "zh_desc": "2026年初发布的开源世界模型项目，用DiT+MoE架构对视频帧编码学习时空动态，通过自适应层归一化注入动作控制，号称能保持分钟级的场景记忆不漂移。支持文生视频、图生视频等多种玩法，在VBench等评测上表现亮眼，为开放世界模型研究提供了完整可复现的代码底座。",
-     "reason": "新一代开源世界模型代表，分钟级一致性与动作可控性是亮点，2026年世界模型赛道最值得关注项目。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "comfyanonymous/ComfyUI",
+     "url": "https://github.com/comfyanonymous/ComfyUI", "desc": "节点式AI绘画工作流平台（Windows原生）",
+     "lang": "", "week": "", "stars_total": "129378", "win": "可用",
+     "zh_desc": "最流行的开源AI绘画工作流平台，用节点式拖拽界面把文生图、图生图、视频生成、模型微调等能力拼装成可视化流程，支持SD、Flux、Qwen-Image等几乎所有主流模型，Windows原生一键安装、CPU/GPU均可运行。12.9万星标，是AI创作者的必备工具，插件生态极其丰富。",
+     "reason": "AI绘画的事实标准工作流工具，Windows原生支持极佳，插件生态庞大，创作者生产力天花板。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "ollama/ollama",
+     "url": "https://github.com/ollama/ollama", "desc": "一行命令在本地跑大模型（Windows原生）",
+     "lang": "", "week": "", "stars_total": "179281", "win": "可用",
+     "zh_desc": "一行命令在本地跑大模型的最简工具：自动下载模型权重、启动推理服务，提供与OpenAI兼容的API，支持Qwen、GLM、Llama、DeepSeek等主流开源模型，Windows原生安装包即装即用，也可通过Docker部署。17.9万星标，把本地LLM的门槛降到极致，隐私数据不出本机。",
+     "reason": "本地跑大模型最无脑的方案，Windows一键安装，配合Open WebUI还能拥有私人ChatGPT。"},
     {"platform": "精选", "section": "github", "subgroup": "novel", "title": "mlc-ai/mlc-llm",
      "url": "https://github.com/mlc-ai/mlc-llm", "desc": "把LLM编译进手机/浏览器/嵌入式设备",
      "lang": "", "week": "", "stars_total": "23085",
@@ -759,11 +759,11 @@ CURATED_FUN = [
      "lang": "", "week": "", "stars_total": "387268",
      "zh_desc": "2026年现象级开源个人AI助手，跨平台全终端运行，强调本地优先、能替你执行真实任务，像养一只龙虾一样陪着你干活。60天狂揽25万星、总星标超38万，创下GitHub历史增速纪录，把个人专属AI的概念推向大众，是今年开源圈绕不开的话题中心。",
      "reason": "GitHub历史上增长最快的开源项目，现象级热度，个人AI助手赛道的绝对王者。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "Jiayi-Pan/TinyZero",
-     "url": "https://github.com/Jiayi-Pan/TinyZero", "desc": "最小成本复现DeepSeek-R1-Zero",
-     "lang": "", "week": "", "stars_total": "13224",
-     "zh_desc": "DeepSeek-R1-Zero的最小复现项目：基于veRL只用纯强化学习、不靠任何监督微调，就让3B基础模型在倒计时、乘法等任务上自主涌现出自我验证和搜索能力。训练成本极低（约224元/4张A800/8小时），代码精简到极致，是理解RL调出推理能力的教科书式代码。",
-     "reason": "花几百块钱就能亲眼见证推理能力涌现，极客教育的典范，复现R1-Zero的社区首选。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "browser-use/browser-use",
+     "url": "https://github.com/browser-use/browser-use", "desc": "让AI Agent像人一样操作浏览器（Windows可用）",
+     "lang": "", "week": "", "stars_total": "110262", "win": "可用",
+     "zh_desc": "让AI Agent像人一样操作浏览器的开源框架：给LLM一个任务，它就能自动打开网页、点击按钮、填写表单、抓取信息并完成复杂网页操作，支持主流大模型和浏览器，Windows上通过Python加pip即可安装使用。11万星标，是浏览器自动化Agent领域最火的项目。",
+     "reason": "AI自动操作浏览器，做爬虫、比价、自动填表极其实用，Windows环境开箱即用。"},
     {"platform": "精选", "section": "github", "subgroup": "novel", "title": "hacksider/Deep-Live-Cam",
      "url": "https://github.com/hacksider/Deep-Live-Cam", "desc": "一张照片实时换脸/Deepfake工具",
      "lang": "", "week": "", "stars_total": "96092",
@@ -789,11 +789,11 @@ CURATED_FUN = [
      "lang": "", "week": "", "stars_total": "24374",
      "zh_desc": "由MemGPT进化而来的有状态Agent平台，核心是给AI装上长期记忆：用Agent File(.af)格式保存状态、跨平台迁移、可版本控制，还提供可视化开发环境实时查看Agent的内存与工具调用，原生支持MCP，直击AI对话转头就忘的痛点。",
      "reason": "长期记忆是Agent落地的关键短板，Letta的.af格式与可视化调试独树一帜，24k星证实力。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "Wan-Video/Wan2.1",
-     "url": "https://github.com/Wan-Video/Wan2.1", "desc": "阿里通义万相开源视频生成大模型",
-     "lang": "", "week": "", "stars_total": "16883",
-     "zh_desc": "阿里通义万相的开源视频生成大模型，支持文生视频、图生视频、多分辨率生成和真实感视频创作，参数规模与效果对标商用闭源模型，模型权重和推理代码全部开放，16.8k星标，是国内开源视频生成领域最重磅的选手之一。",
-     "reason": "国产开源视频生成天花板，做短视频、纪录片素材生成非常实用，可直接本地部署使用。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "modelscope/FunClip",
+     "url": "https://github.com/modelscope/FunClip", "desc": "按关键词自动剪辑视频（Windows可用）",
+     "lang": "", "week": "", "stars_total": "6175", "win": "可用",
+     "zh_desc": "阿里通义实验室开源的AI视频剪辑工具，基于FunASR语音识别：自动给视频生成字幕，你只需输入想保留的关键词或人名，它就能自动识别对应片段并一键剪出成片，支持中英文等语言。Windows下pip安装即可使用，做短视频、纪录片剪辑素材整理非常顺手。",
+     "reason": "按关键词自动剪视频，口播号做素材整理的效率神器，Windows友好且上手极快。"},
     {"platform": "精选", "section": "github", "subgroup": "novel", "title": "2noise/ChatTTS",
      "url": "https://github.com/2noise/ChatTTS", "desc": "会聊天、带情绪和笑声的对话式TTS",
      "lang": "", "week": "", "stars_total": "39789",
@@ -808,7 +808,10 @@ CURATED_FUN = [
 
 
 def fetch_curated_fun():
-    """固定注入精选有趣项目（不参与 GitHub 池策展，直接进 RAW_ITEMS）。"""
+    """固定注入精选有趣项目（不参与 GitHub 池策展，直接进 RAW_ITEMS）。
+    win 规则（2026-08-24）：精选项目必须 Windows 可用；未显式标注的默认"可用"。"""
+    for it in CURATED_FUN:
+        it.setdefault("win", "可用")
     RAW_ITEMS.extend(CURATED_FUN)
     return len(CURATED_FUN)
 
@@ -846,8 +849,9 @@ def run_source(name, fn, *a):
 DS_PROMPT = (
     "你是中文科技内容编辑。为下面的条目撰写：\n"
     "1. zh_desc：≥80字的中文简介，讲清它是什么、解决什么问题、亮点是什么；\n"
-    "2. reason：≥20字的收录理由，说明为什么值得关注（热度/新颖性/实用价值）。\n"
-    "只输出 JSON：{\"zh_desc\": \"...\", \"reason\": \"...\"}\n\n"
+    "2. reason：≥20字的收录理由，说明为什么值得关注（热度/新颖性/实用价值）；\n"
+    "3. win：判断该项目在 Windows 上能否使用，只能取 \"可用\"（Windows原生可跑）/\"需WSL\"（需WSL或Docker）/\"不可用\"（无法在Windows运行，如仅Linux CUDA训练、iOS/macOS专属）。若条目是纪录片/视频/新闻资讯类内容（非软件项目），win 一律填 \"可用\"。\n"
+    "只输出 JSON：{\"zh_desc\": \"...\", \"reason\": \"...\", \"win\": \"可用\"}\n\n"
     "标题：{title}\n简介：{desc}\n链接：{url}"
 )
 
@@ -883,8 +887,11 @@ def call_deepseek(item):
             obj = json.loads(content)
             zh = str(obj.get("zh_desc", "")).strip()
             rn = str(obj.get("reason", "")).strip()
+            win = str(obj.get("win", "可用")).strip()
+            if win not in ("可用", "需WSL", "不可用"):
+                win = "可用"
             if len(zh) >= 40 and len(rn) >= 20:
-                return zh, rn
+                return zh, rn, win
             last_err = f"内容不合格 len(zh)={len(zh)}"
         except Exception as e:
             last_err = str(e)[:120]
@@ -894,7 +901,8 @@ def call_deepseek(item):
 
 
 def enrich_zh(items, workers=None):
-    """为缺 zh_desc 的条目批量生成；原地更新 dict。返回成功条数。"""
+    """为缺 zh_desc 的条目批量生成；原地更新 dict。返回成功条数。
+    同时回填 win（Windows 可用性，用户规则 2026-08-24）。"""
     workers = workers or CONFIG["deepseek"]["workers"]
     todo = [it for it in items if not it.get("zh_desc")]
     if not todo:
@@ -909,6 +917,7 @@ def enrich_zh(items, workers=None):
             res = f.result()
             if res:
                 it["zh_desc"] = res[0]
+                it["win"] = res[2]
                 if not it.get("reason") or len(str(it.get("reason", ""))) < 20:
                     # 收录理由 <20字 也重新生成（用户要求理由≥20字；GitHub 策展短句会被覆盖）
                     it["reason"] = res[1]
@@ -941,6 +950,8 @@ def card_html(items):
         badge = ""
         if it.get("week"):
             badge = f'<span class="src hot">周★ +{esc(it.get("week"))}</span>'
+        if it.get("win") == "需WSL":
+            badge += '<span class="src wsl">🐧 WSL/Docker</span>'
         desc = it.get("zh_desc") or it.get("desc") or ""
         reason = it.get("reason")
         extra = f'<div class="card-desc">{esc(desc)}</div>'
@@ -982,6 +993,7 @@ def build_html():
  .card-head{{margin-bottom:4px}}
  .src{{display:inline-block;background:#232a38;color:#8b93a7;font-size:11px;border-radius:4px;padding:1px 7px;margin-right:8px}}
  .src.hot{{background:#2a2118;color:#f78166}}
+ .src.wsl{{background:#2a2418;color:#ffcf5c}}
  .card-title{{font-size:14px;color:#e6e6e6;font-weight:bold}}
  .card-desc{{color:#8b93a7;font-size:12px;line-height:1.6}}
  .card-reason{{color:#ffcf5c;font-size:12px;line-height:1.5;margin-top:4px}}
@@ -1093,6 +1105,14 @@ def main():
         log("[4/4] 写入文件...")
         if not args.skip_enrich:
             enrich_zh(RAW_ITEMS)
+        # Windows 可用性过滤（用户规则 2026-08-24：开源项目/技能必须 Windows 能用）
+        dropped = [it.get("title", "") for it in RAW_ITEMS
+                   if it.get("section") in ("github", "ai") and it.get("win") == "不可用"]
+        if dropped:
+            RAW_ITEMS[:] = [it for it in RAW_ITEMS
+                            if not (it.get("section") in ("github", "ai") and it.get("win") == "不可用")]
+            STATS["dropped_no_win"] = dropped
+            log(f"[Windows过滤] 剔除 {len(dropped)} 条不可用: {dropped[:5]}{' ...' if len(dropped) > 5 else ''}")
         with open(RAW_PATH, "w", encoding="utf-8") as f:
             json.dump({"date": TODAY, "items": RAW_ITEMS}, f, ensure_ascii=False, indent=1)
     else:
