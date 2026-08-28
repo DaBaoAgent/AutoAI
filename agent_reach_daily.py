@@ -314,6 +314,20 @@ def load_exclude(conn):
                     ex.add(f"github:{str(it.get('title', '')).lower()}")
         except Exception:
             pass
+    # 历史看板推荐清单（2026-08-29 起：data/recommended_history.json，
+    # 由 tools_extract_history.py 从 D:\BaiduSyncdisk\2 @AI编程\AI看板\*.html + items.db 生成）
+    hist = os.path.join(BASE, "data", "recommended_history.json")
+    try:
+        if os.path.exists(hist):
+            recs = json.load(open(hist, encoding="utf-8"))
+            for u in recs:
+                if "github.com/" in u:
+                    repo = u.replace("https://github.com/", "").rstrip("/").lower()
+                    if repo:
+                        ex.add(repo)
+                        ex.add(f"github:{repo}")
+    except Exception:
+        pass
     return ex
 
 
@@ -409,7 +423,7 @@ def fetch_github_pool():
 GH_CURATE_PROMPT = """你是GitHub开源项目策展人，用户是中文自媒体创作者（纪录片解说、口播文案、AI工具重度用户、本地知识库与视频制作工作流）。
 候选列表 = 本周GitHub星标涨幅最快的项目（格式：repo | 本周★ | 一句话简介）。
 从中各选 {novel_n} 个，共 {work_n} 个：
-1. novel —— 最新奇/有趣的项目：优先个人/新项目、技能类、冷门实用工具；排除早已出名的老牌大项目（如 system-design-primer、ComfyUI、ollama、free-programming-books 等），即使它们涨幅最高。
+1. novel —— 最新奇/最有趣/最好玩的项目：优先个人/新项目、技能类、冷门实用工具、脑洞大开的玩法（如趣味可视化、桌面玩具、AI 创意应用、新奇硬件玩法）；排除早已出名的老牌大项目（如 system-design-primer、ComfyUI、ollama、free-programming-books 等），即使它们涨幅最高。用户口味：新奇、好玩、有创意，Windows 能用的优先。
 2. work —— 与用户工作/兴趣最相关的：AI 工具/Agent、口播文案与自媒体创作工具、视频制作/字幕/配音/解说、纪录片素材、知识库/检索、效率工具、Windows 工具、中文内容相关。
 只输出 JSON：{{"novel": [{{"repo": "owner/repo", "reason": "≤40字入选理由"}}], "work": [{{"repo": "owner/repo", "reason": "≤40字入选理由"}}]}}
 候选列表：
@@ -422,7 +436,13 @@ def curate_github(items, exclude):
     novel_n, work_n = gcfg["curate_novel"], gcfg["curate_work"]
     cands = [it for it in items if it["repo"].lower() not in exclude]
     if len(cands) < novel_n + work_n:
-        cands = items
+        # 不够时从排除池按热度补足（容忍少量重复），绝不整池回退（2026-08-29 修复：
+        # 原 cands=items 会把已推荐项目全放回来，Kimi-K3 就是漏网的）
+        need = novel_n + work_n - len(cands)
+        extra = [it for it in items if it["repo"].lower() in exclude][:need]
+        if extra:
+            log(f"  ⚠️ 未推荐候选不足，从排除池补足 {len(extra)} 条（容忍重复）")
+        cands = cands + extra
     lines = "\n".join(f"{it['repo']} | {it['week'] or it['stars']}★ | {it['desc'][:120]}"
                       for it in cands)
     key = load_env_key("DEEPSEEK_API_KEY")
@@ -460,9 +480,12 @@ def curate_github(items, exclude):
 
 def build_github_section(curated, pool_map):
     """策展结果 → RAW_ITEMS（section=github）。返回条数。"""
+    gcfg = CONFIG["github"]
     count = 0
     for group, sub in (("novel", "novel"), ("work", "work")):
-        for sel in curated.get(group, []):
+        # 数量截断到配置上限（2026-08-29：DeepSeek 可能超额输出，强制 novel/work 各 ≤ 配置值）
+        limit = gcfg.get(f"curate_{group}", 10)
+        for sel in (curated.get(group, []) or [])[:limit]:
             it = pool_map.get(str(sel.get("repo", "")).lower())
             if not it:
                 continue
@@ -712,106 +735,106 @@ def fetch_bili_ai():
 # 用户点名方向：像素办公室/语音陪伴/wifi雷达/世界模型/手机端侧LLM + 趣味项目。
 # zh_desc 手写≥80字、reason≥30字 → enrich_zh 跳过（只处理缺 zh_desc 的），不烧 DeepSeek token。
 CURATED_FUN = [
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "ringhyacinth/Star-Office-UI",
-     "url": "https://github.com/ringhyacinth/Star-Office-UI", "desc": "像素风 AI 办公室看板",
-     "lang": "", "week": "", "stars_total": "7443",
-     "zh_desc": "一个像素风格的AI办公室看板，能把AI助手的工作状态实时可视化：谁在做什么、昨天做了什么、现在是否在线一目了然。支持多Agent协作、中英日三语界面、AI生图装修房间和桌面宠物模式，与OpenClaw深度集成时体验最佳，也可独立部署当状态看板使用，MIT协议开源。",
-     "reason": "像素风治愈系看板，把枯燥的Agent工作状态变成可爱的小人办公室，可玩性极高，社区热度持续攀升。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "pixel-agents-hq/pixel-agents",
-     "url": "https://github.com/pixel-agents-hq/pixel-agents", "desc": "终端AI编程Agent变成像素小人办公室",
-     "lang": "", "week": "", "stars_total": "8999",
-     "zh_desc": "把终端里正在运行的AI编程Agent变成像素小人，在迷你办公室里走来走去：写代码时坐桌前打字、搜索时看书、卡住等输入时会向你挥手示意。支持铺设地板墙壁、摆放家具、养像素宠物、64×64格大办公室，布局可导出导入JSON，让AI开发过程变得直观又有趣。",
-     "reason": "程序员视角的趣味可视化，AI干活看得见摸得着，桌面宠物式交互极其解压，创意与实用兼备。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "pipecat-ai/pipecat",
-     "url": "https://github.com/pipecat-ai/pipecat", "desc": "开源实时语音Agent框架",
-     "lang": "", "week": "", "stars_total": "14536",
-     "zh_desc": "由Daily公司维护的开源实时语音Agent框架，用于构建能听会说、支持随时打断和低延迟对话的语音AI应用，也可做多模态实时应用。提供开箱即用的语音流水线组件，支持WebRTC、流式STT/TTS与主流大模型接入，星标超1.4万，是语音陪伴、AI客服类产品的主流底座。",
-     "reason": "语音Agent领域的事实标准框架之一，生态活跃，想做语音陪伴或客服产品可以直接站在巨人肩膀上。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "leon-ai/leon",
-     "url": "https://github.com/leon-ai/leon", "desc": "开源个人AI语音助手",
-     "lang": "", "week": "", "stars_total": "17455", "win": "需WSL",
-     "zh_desc": "开源的个人AI语音助手Leon，支持语音交互、文本对话和自动化技能扩展，强调隐私与离线，不依赖商业云服务即可运行。内置Python/Node双语言技能开发接口，可自定义提醒、查询、自动化等技能，17k+星标，适合喜欢自己动手折腾的极客搭建专属私人管家。",
-     "reason": "老牌开源语音助手，主打隐私与可扩展，给想要自托管陪伴式助手的用户一个可靠选择。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "ruvnet/ruview",
-     "url": "https://github.com/ruvnet/ruview", "desc": "WiFi信号变雷达：穿墙感知存在/呼吸/姿态",
-     "lang": "", "week": "", "stars_total": "91403",
-     "zh_desc": "把普通WiFi信号变成雷达的开源平台：利用ESP32传感器采集信道状态信息(CSI)，就能穿墙感知人体存在、呼吸频率、动作姿态，甚至做生命体征监测，全程不拍一张照片、不装摄像头，天然规避隐私法规。2026年发布后迅速爆火，星标超9万，被视为WiFi感知领域的现象级项目。",
-     "reason": "WiFi变雷达、穿墙看呼吸，硬核又科幻的玩法，隐私合规方向极具想象力，开源社区热议焦点。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "Saad-Imtiaz/WiFi-Sense",
-     "url": "https://github.com/Saad-Imtiaz/WiFi-Sense", "desc": "ESP32-S3 WiFi被动雷达：人体存在检测",
-     "lang": "", "week": "", "stars_total": "3",
-     "zh_desc": "基于ESP32-S3的WiFi被动雷达小项目：只靠一个开发板和路由器，利用RSSI与信道状态信息(CSI)就能检测房间里有没有人、人在动还是静止、大概在什么位置，无需任何额外传感器。自带Web界面实时展示探测结果，Arduino工程开箱即用，是极客DIY智能家居感应器的绝佳入门。",
-     "reason": "几十块钱的硬件就能做人体存在感知，DIY门槛极低，玩智能家居或安防监控非常实用。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "comfyanonymous/ComfyUI",
-     "url": "https://github.com/comfyanonymous/ComfyUI", "desc": "节点式AI绘画工作流平台（Windows原生）",
-     "lang": "", "week": "", "stars_total": "129378", "win": "可用",
-     "zh_desc": "最流行的开源AI绘画工作流平台，用节点式拖拽界面把文生图、图生图、视频生成、模型微调等能力拼装成可视化流程，支持SD、Flux、Qwen-Image等几乎所有主流模型，Windows原生一键安装、CPU/GPU均可运行。12.9万星标，是AI创作者的必备工具，插件生态极其丰富。",
-     "reason": "AI绘画的事实标准工作流工具，Windows原生支持极佳，插件生态庞大，创作者生产力天花板。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "ollama/ollama",
-     "url": "https://github.com/ollama/ollama", "desc": "一行命令在本地跑大模型（Windows原生）",
-     "lang": "", "week": "", "stars_total": "179281", "win": "可用",
-     "zh_desc": "一行命令在本地跑大模型的最简工具：自动下载模型权重、启动推理服务，提供与OpenAI兼容的API，支持Qwen、GLM、Llama、DeepSeek等主流开源模型，Windows原生安装包即装即用，也可通过Docker部署。17.9万星标，把本地LLM的门槛降到极致，隐私数据不出本机。",
-     "reason": "本地跑大模型最无脑的方案，Windows一键安装，配合Open WebUI还能拥有私人ChatGPT。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "mlc-ai/mlc-llm",
-     "url": "https://github.com/mlc-ai/mlc-llm", "desc": "把LLM编译进手机/浏览器/嵌入式设备",
-     "lang": "", "week": "", "stars_total": "23085",
-     "zh_desc": "通用大模型部署引擎，核心思路是用机器学习编译技术把LLM编译成可在手机、平板、浏览器、嵌入式设备上高效运行的代码，支持iOS/Android/Web全平台，无需服务器即可在端侧流畅运行Qwen、Llama等主流模型。23k+星标，是把大模型塞进手机的事实标准方案之一。",
-     "reason": "手机跑大模型的最成熟开源路线，隐私、离线、低延迟全都要，端侧AI时代的核心基建。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "ggml-org/llama.cpp",
-     "url": "https://github.com/ggml-org/llama.cpp", "desc": "本地/手机跑LLM的事实标准推理引擎",
-     "lang": "", "week": "", "stars_total": "125308",
-     "zh_desc": "最流行的本地大模型推理引擎，用C/C++实现并高度优化，GGUF量化格式让几十亿参数模型也能跑在普通电脑甚至手机上，支持CPU/GPU/NPU各种硬件，生态覆盖桌面、Android、iOS、浏览器。12.5万星标，从边缘设备到数据中心的端侧推理事实标准。",
-     "reason": "端侧AI绕不开的基石项目，想在本机或手机跑任何开源模型，第一个装的就是它。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "openclaw/openclaw",
-     "url": "https://github.com/openclaw/openclaw", "desc": "2026现象级开源个人AI助手（养龙虾）",
-     "lang": "", "week": "", "stars_total": "387268",
-     "zh_desc": "2026年现象级开源个人AI助手，跨平台全终端运行，强调本地优先、能替你执行真实任务，像养一只龙虾一样陪着你干活。60天狂揽25万星、总星标超38万，创下GitHub历史增速纪录，把个人专属AI的概念推向大众，是今年开源圈绕不开的话题中心。",
-     "reason": "GitHub历史上增长最快的开源项目，现象级热度，个人AI助手赛道的绝对王者。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "browser-use/browser-use",
-     "url": "https://github.com/browser-use/browser-use", "desc": "让AI Agent像人一样操作浏览器（Windows可用）",
-     "lang": "", "week": "", "stars_total": "110262", "win": "可用",
-     "zh_desc": "让AI Agent像人一样操作浏览器的开源框架：给LLM一个任务，它就能自动打开网页、点击按钮、填写表单、抓取信息并完成复杂网页操作，支持主流大模型和浏览器，Windows上通过Python加pip即可安装使用。11万星标，是浏览器自动化Agent领域最火的项目。",
-     "reason": "AI自动操作浏览器，做爬虫、比价、自动填表极其实用，Windows环境开箱即用。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "hacksider/Deep-Live-Cam",
-     "url": "https://github.com/hacksider/Deep-Live-Cam", "desc": "一张照片实时换脸/Deepfake工具",
-     "lang": "", "week": "", "stars_total": "96092",
-     "zh_desc": "一键实时换脸工具：只需一张人脸照片就能在摄像头视频流中实时替换目标人脸，同时支持视频文件换脸和Deepfake生成，全程本地处理、无需高端显卡。9.6万星标，因其极低的门槛和惊艳效果风靡全网，也持续引发关于深度伪造技术的伦理讨论。",
-     "reason": "实时换脸门槛降到一张照片级别，娱乐性拉满，是生成式AI最出圈的消费级应用之一。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "rasbt/LLMs-from-scratch",
-     "url": "https://github.com/rasbt/LLMs-from-scratch", "desc": "从零手搓一个ChatGPT级LLM",
-     "lang": "", "week": "", "stars_total": "103548",
-     "zh_desc": "《Build a Large Language Model from Scratch》一书的官方代码库，手把手教你从零实现一个类ChatGPT的大语言模型：数据准备、注意力机制、预训练、微调、指令对齐全流程都有配套PyTorch代码和Jupyter教程，10万+星标，被誉为LLM入门第一课。",
-     "reason": "从零到一吃透Transformer和大模型训练管线，理论实践结合的标杆教程，学习价值极高。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "TauricResearch/TradingAgents",
-     "url": "https://github.com/TauricResearch/TradingAgents", "desc": "多Agent模拟华尔街投行团队炒股",
-     "lang": "", "week": "", "stars_total": "99490",
-     "zh_desc": "多智能体LLM金融交易框架，模拟华尔街投行团队分工：基本面分析师、情绪分析师、新闻分析师、基金经理、风控官等角色各司其职，在财报发布周期内协同研究、辩论并给出交易决策，99k+星标，是AI Agent加金融方向最火的实践项目。",
-     "reason": "把多Agent协作玩出花，AI投资委员会概念新颖有趣，量化爱好者必看的明星项目。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "mindverse/Second-Me",
-     "url": "https://github.com/mindverse/Second-Me", "desc": "训练一个自己的AI数字分身",
-     "lang": "", "week": "", "stars_total": "15669",
-     "zh_desc": "训练你自己的AI分身：通过分层记忆模型(HMM)和Me-Alignment算法，让AI学习你的思维方式和偏好，成为能代表你长期记忆、帮你做决策的数字自我。完全本地部署、数据不出设备，Apache-2.0开源，15k+星标，是数字永生概念的最佳实践之一。",
-     "reason": "训练一个自己的AI的梦想成真，本地部署隐私可控，数字分身赛道的标杆项目。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "letta-ai/letta",
-     "url": "https://github.com/letta-ai/letta", "desc": "有长期记忆的有状态Agent平台（原MemGPT）",
-     "lang": "", "week": "", "stars_total": "24374",
-     "zh_desc": "由MemGPT进化而来的有状态Agent平台，核心是给AI装上长期记忆：用Agent File(.af)格式保存状态、跨平台迁移、可版本控制，还提供可视化开发环境实时查看Agent的内存与工具调用，原生支持MCP，直击AI对话转头就忘的痛点。",
-     "reason": "长期记忆是Agent落地的关键短板，Letta的.af格式与可视化调试独树一帜，24k星证实力。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "modelscope/FunClip",
-     "url": "https://github.com/modelscope/FunClip", "desc": "按关键词自动剪辑视频（Windows可用）",
-     "lang": "", "week": "", "stars_total": "6175", "win": "可用",
-     "zh_desc": "阿里通义实验室开源的AI视频剪辑工具，基于FunASR语音识别：自动给视频生成字幕，你只需输入想保留的关键词或人名，它就能自动识别对应片段并一键剪出成片，支持中英文等语言。Windows下pip安装即可使用，做短视频、纪录片剪辑素材整理非常顺手。",
-     "reason": "按关键词自动剪视频，口播号做素材整理的效率神器，Windows友好且上手极快。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "2noise/ChatTTS",
-     "url": "https://github.com/2noise/ChatTTS", "desc": "会聊天、带情绪和笑声的对话式TTS",
-     "lang": "", "week": "", "stars_total": "39789",
-     "zh_desc": "专为日常对话场景设计的生成式语音模型，能输出自然、有情感起伏、带笑声和语气词的真人感语音，支持中英文混合与多说话人，比传统TTS更接近真人聊天。39k+星标，被广泛用于语音陪伴、播客、短视频配音等场景，本地即可部署。",
-     "reason": "最像真人聊天的开源TTS，情绪和语气词让配音有灵魂，内容创作者必备神器。"},
-    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "OpenBMB/MiniCPM-V",
-     "url": "https://github.com/OpenBMB/MiniCPM-V", "desc": "手机端侧能跑的多模态大模型",
-     "lang": "", "week": "", "stars_total": "26219",
-     "zh_desc": "面壁智能推出的口袋级端侧多模态模型系列，几十亿参数就能在图像、视频、音频理解上逼近GPT-4V等大模型，可在手机、平板等端侧设备离线运行，支持图像问答、视频理解、OCR等任务，26k+星标，让普通小设备也能拥有大模型的眼睛。",
-     "reason": "手机端多模态理解天花板，与手机能跑的LLM主题完美呼应，端侧智能落地典范。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "obra/superpowers",
+     "url": "https://github.com/obra/superpowers", "desc": "开源 agentic 技能框架（27.9万★）",
+     "lang": "Shell", "week": "", "stars_total": "279058", "win": "可用",
+     "zh_desc": "开源 agentic 技能框架与方法论合集，把软件开发流程拆成可复用的技能模块——头脑风暴、子代理驱动开发、代码审查、重构等，让 AI 编程助手按成熟方法论干活而不是瞎写。27.9万星标，是 2026 年编程技能生态的标志性项目，装上后 AI 写代码的质量和稳定性明显提升，程序员与 AI 重度用户都值得关注。",
+     "reason": "技能生态的现象级项目，把'给 AI 装方法论'玩到极致，编程效率党必看。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "koala73/worldmonitor",
+     "url": "https://github.com/koala73/worldmonitor", "desc": "实时全球情报态势仪表盘（8.4万★）",
+     "lang": "TypeScript", "week": "", "stars_total": "84690", "win": "可用",
+     "zh_desc": "实时全球情报仪表盘，把 AI 新闻聚合、地缘政治监控和基础设施追踪整合进一个统一态势感知界面，世界大事、舆情热点、科技动态一屏尽览。支持 MCP 服务器扩展，TypeScript 编写可本地自托管，8.4万+星标，是 2026 年初爆火的信息监控类开源项目，打开就像坐进情报指挥中心。",
+     "reason": "像开了上帝视角看世界，情报聚合+可视化做得极其炫酷，OSINT 爱好者福音。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "karpathy/autoresearch",
+     "url": "https://github.com/karpathy/autoresearch", "desc": "AI 自动跑单卡 GPU 训练研究（9.4万★）",
+     "lang": "Python", "week": "", "stars_total": "94862", "win": "需WSL",
+     "zh_desc": "Karpathy 新作：AI 智能体自动跑单卡 GPU 上的 nanochat 小模型训练研究，从实验设计、跑训练、分析结果到写报告全流程自动化，把做深度学习研究这件事本身交给 AI 代理循环完成。9.4万+星标，是 AI for Science 方向最出圈的个人项目之一，适合想探索 AI 自动化科研玩法的技术玩家。",
+     "reason": "AI 自动做科研实验，Karpathy 出手必属精品，研究自动化玩法极具前瞻性。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "alchaincyf/nuwa-skill",
+     "url": "https://github.com/alchaincyf/nuwa-skill", "desc": "把任何人的思维方式蒸馏成技能（3.1万★）",
+     "lang": "Python", "week": "", "stars_total": "31596", "win": "可用",
+     "zh_desc": "把任何人的思维方式蒸馏成技能的开源项目——通过对话分析提取对方的心智模型、决策启发式和表达DNA，让 AI 学会像那个人一样思考。3.1万+星标，中文社区作品，可用于打造数字分身、学习高手思维，中文语境下效果突出，与思维蒸馏、数字员工概念一脉相承，玩法非常新潮。",
+     "reason": "思维蒸馏玩法新颖，把向高手学习变成可复制的技能包，AI 分身赛道新姿势。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "ayghri/i-have-adhd",
+     "url": "https://github.com/ayghri/i-have-adhd", "desc": "让 AI 输出 ADHD 友好：简洁直接（2.5万★）",
+     "lang": "Python", "week": "", "stars_total": "25333", "win": "可用",
+     "zh_desc": "专门写给 ADHD 用户的 AI 技能：防止编程助手把答案埋在长篇大论里，强制输出简洁、直接、可立刻执行的结果。2.5万+星标，2026年5月发布后病毒式传播，无数人感叹原来 AI 助手也能这么听话，是让 AI 输出风格适配个人需求的最佳示范，强迫症和注意力难集中的用户都适用。",
+     "reason": "一句'我有ADHD'就让 AI 变简洁，精准解决阅读困难人群痛点，创意满分。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "Leonxlnx/taste-skill",
+     "url": "https://github.com/Leonxlnx/taste-skill", "desc": "给 AI 装上'好品味'，防生成垃圾（8.1万★）",
+     "lang": "JavaScript", "week": "", "stars_total": "81885", "win": "可用",
+     "zh_desc": "给 AI 装上好品味的技能包：防止 AI 生成千篇一律、毫无灵魂的设计和文案，内置大量审美准则和反套路规则，让 AI 产出的网页、界面、文案更有设计感。8.1万+星标，被大量开发者用于对抗 AI 味，是设计向 agent 技能里的顶流，做网站、做封面、写文案之前先给它装上品味。",
+     "reason": "专治 AI 审美癌，让生成物有质感有灵魂，对抗 AI 味的神器。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "block/buzz",
+     "url": "https://github.com/block/buzz", "desc": "Block 出品'蜂巢思维'协作平台（3.1万★）",
+     "lang": "Rust", "week": "", "stars_total": "31301", "win": "需WSL",
+     "zh_desc": "Block 出品的蜂巢思维通信平台，主打群体协作和信息共享的全新形态——多个参与者像蜂群一样围绕共同目标实时同步、交换信息、协同决策，Rust 编写的高性能底层。3.1万+星标，2026年3月开源后引发关于下一代协作方式的广泛讨论，概念新颖大胆，值得尝鲜。",
+     "reason": "蜂群式协作概念大胆新颖，大厂出品的高性能通信实验，脑洞大开。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "heygen-com/hyperframes",
+     "url": "https://github.com/heygen-com/hyperframes", "desc": "用 HTML 写'视频源码'渲染 MP4（4.2万★）",
+     "lang": "TypeScript", "week": "", "stars_total": "42987", "win": "可用",
+     "zh_desc": "HeyGen 开源的程序化视频框架：用 HTML/CSS/GSAP 动画写视频源码，再渲染成真正的 MP4，专为 AI agent 设计，支持 puppeteer 和 ffmpeg 双渲染引擎。4.2万+星标，让写网页=做视频成为可能，适合批量生成字幕动画、产品演示、动态信息图和 AI 自动出片，玩法非常新奇。",
+     "reason": "HTML 即视频，用写网页的方式做视频，程序化视频创作的新范式。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "HKUDS/ViMax",
+     "url": "https://github.com/HKUDS/ViMax", "desc": "导演+编剧+制片一体的 agent 视频生成（1.2万★）",
+     "lang": "Python", "week": "", "stars_total": "12139", "win": "需WSL",
+     "zh_desc": "港大团队的开源 Agentic 视频生成框架，把导演、编剧、制片人和视频生成器集成到一个智能体系统里：输入故事梗概，它自动完成剧本、分镜、镜头设计和视频生成全流程，一篇论文一个系统。1.2万+星标，2026年6月的明星项目，主打一句话出片，影视自动化的前沿方向。",
+     "reason": "导演编剧制片全包揽的 agent 视频系统，影视创作自动化天花板方向。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "ArcReel/ArcReel",
+     "url": "https://github.com/ArcReel/ArcReel", "desc": "小说/剧本一键转剪映草稿+视频（4.2千★）",
+     "lang": "Python", "week": "", "stars_total": "4246", "win": "可用",
+     "zh_desc": "开源自部署的 AI 视频工作台：把小说和剧本自动转成角色、场景、道具资产、分镜、视频，甚至直接导出剪映草稿，支持跨镜头角色一致性、多家视频生成供应商和费用追踪。4.2千+星标，中文社区作品，短剧漫剧创作者的全自动生产管线，与用户本地剪映工作流天然衔接。",
+     "reason": "小说直达剪映草稿，短剧漫剧创作者的全自动生产线，落地性极强。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "Huanshere/VideoLingo",
+     "url": "https://github.com/Huanshere/VideoLingo", "desc": "一键全自动 AI 字幕组：翻译+对齐+配音（1.8万★）",
+     "lang": "Python", "week": "", "stars_total": "18280", "win": "可用",
+     "zh_desc": "一键全自动的 AI 字幕组工具：对视频做字幕切割、翻译、对齐甚至配音，支持 80+ 语言，Netflix 级效果，还内置语音克隆功能。1.8万+星标，做海外纪录片搬运、双语字幕、视频本地化的效率神器，Windows 上 pip 安装即可用，短视频和纪录片创作者的生产力工具。",
+     "reason": "一个人就是一个字幕组，翻译配音全自动，视频搬运工的神器。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "RVC-Boss/GPT-SoVITS",
+     "url": "https://github.com/RVC-Boss/GPT-SoVITS", "desc": "1 分钟音频克隆音色的 TTS（6.1万★）",
+     "lang": "Python", "week": "", "stars_total": "61307", "win": "可用",
+     "zh_desc": "少样本声音克隆神器：只需 1 分钟参考音频就能训练出高质量的 TTS 模型，支持中英日韩等多语种、语音转换和情感控制，自带 WebUI 和全套训练脚本。6.1万+星标，是 AI 配音和声音克隆领域最流行的开源项目之一，Windows 一键部署，做短视频配音、纪录片旁白克隆音色的标配工具。",
+     "reason": "一分钟音频克隆音色，配音圈事实标准，视频创作者必备工具。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "debpalash/VoiceStudio",
+     "url": "https://github.com/debpalash/VoiceStudio", "desc": "本地版 ElevenLabs：646 语言全能语音（1.1万★）",
+     "lang": "Python", "week": "", "stars_total": "11920", "win": "可用",
+     "zh_desc": "完全本地的 ElevenLabs 开源替代品：声音克隆、声音设计、视频配音、听写转写、有声书生成一站式搞定，支持 646 种语言，本地运行数据不出设备。1.1万+星标，2026年新晋项目，Tauri 桌面壳加 Python 后端，主打隐私和全能，是声音创作与配音工作流的一站式解决方案。",
+     "reason": "本地版 ElevenLabs，646 语言全能语音套件，隐私与功能兼得。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "DrewThomasson/ebook2audiobook",
+     "url": "https://github.com/DrewThomasson/ebook2audiobook", "desc": "电子书一键转有声书（1158+ 语言）（2万★）",
+     "lang": "Python", "week": "", "stars_total": "20061", "win": "可用",
+     "zh_desc": "电子书一键转有声书：支持 EPUB/PDF/TXT 等格式，内置 1158+ 种语言的 TTS 和声音克隆功能，可自定义旁白音色，产出高质量 mp3/m4b 有声书。2万+星标，配有 Gradio WebUI，把听书体验做到极致，通勤路上解放双眼，还能克隆自己的声音当专属主播，趣味性和实用性兼备。",
+     "reason": "千种语言电子书转有声书，听书党福音，还能克隆音色当专属主播。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "vikiboss/60s",
+     "url": "https://github.com/vikiboss/60s", "desc": "免费'60秒看世界'开放 API 合集（5.6千★）",
+     "lang": "TypeScript", "week": "", "stars_total": "5685", "win": "可用",
+     "zh_desc": "免费的 60秒看世界 开放 API 集合：小红书、B站、微博、抖音、知乎热搜、金价油价、天气、翻译、壁纸、猫眼票房、历史上的今天等几十个高质量接口，全部免费、全球 CDN 加速，支持 Docker/Node/Deno 一键自部署。5.6千+星标，自媒体选题灵感、热点监控、数据面板的免费弹药库。",
+     "reason": "一个 API 看遍全网热搜，自媒体选题灵感采集的免费弹药库。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "HKUDS/CLI-Anything",
+     "url": "https://github.com/HKUDS/CLI-Anything", "desc": "让所有软件都变成 AI agent 原生（4.8万★）",
+     "lang": "Python", "week": "", "stars_total": "48522", "win": "可用",
+     "zh_desc": "让所有软件都变成 AI agent 原生可操作的项目：通过 CLI 统一抽象，把任意命令行工具包装成 agent 可调用的接口，配合 CLI-Hub 生态，AI 助手可以像人一样操作各种软件。4.8万+星标，2026年3月发布，万物皆可 agent 理念的践行者，让 AI 接管一切工具成为现实。",
+     "reason": "万物皆可 agent 化，AI 操作软件的新基建，想象力拉满。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "LaoFeng-mouse/flyingmouse-format",
+     "url": "https://github.com/LaoFeng-mouse/flyingmouse-format", "desc": "Windows 免费离线格式转换工具（4.8千★）",
+     "lang": "JavaScript", "week": "", "stars_total": "4828", "win": "可用",
+     "zh_desc": "Windows 免费文件格式转换工具：离线可用，内置 FFmpeg/LibreOffice/Poppler/Tesseract，图片、文档、表格、PPT、PDF、音视频、WPS 格式互转，还带 OCR 和批量转换。4.8千+星标，2026年8月新发布的国产桌面工具，装机即用、绿色免费，Windows 用户的格式转换万能工具箱。",
+     "reason": "Windows 一站式离线格式转换，含 OCR 批量处理，装机必备小工具。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "JustVugg/colibri",
+     "url": "https://github.com/JustVugg/colibri", "desc": "纯 C 零依赖引擎跑超大 MoE 模型（2.6万★）",
+     "lang": "C", "week": "", "stars_total": "26363", "win": "可用",
+     "zh_desc": "纯 C 语言、零依赖的大模型推理引擎：能在普通硬件上跑前沿 MoE 模型，专家权重按需从磁盘流式加载，内存占用极小——小引擎，巨模型。2.6万+星标，2026年7月发布后迅速爆火，让没有旗舰显卡的人也能玩转超大模型，硬核又解馋，堪称推理引擎里的轻功高手。",
+     "reason": "零依赖 C 引擎跑超大 MoE 模型，磁盘流式专家加载思路极妙。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "ultraworkers/claw-code",
+     "url": "https://github.com/ultraworkers/claw-code", "desc": "AI 无人干预自主开发的'博物馆展品'（19.5万★）",
+     "lang": "Rust", "week": "", "stars_total": "195140", "win": "可用",
+     "zh_desc": "一个由 AI 全程无人干预开发维护的 Rust 开源项目，自称 agent 管理的博物馆展品，用 Gajae-Code/LazyCodex 体系自主迭代，人类完全不参与——堪称 AI 自主编程的行为艺术。19.5万星标，2026年现象级话题项目，刷新了人们对 AI 开发能力的认知，本身就是个大型社会实验。",
+     "reason": "无人干预的 AI 自主开发行为艺术，19.5万星标证明其话题性爆炸。"},
+    {"platform": "精选", "section": "github", "subgroup": "novel", "title": "calesthio/OpenMontage",
+     "url": "https://github.com/calesthio/OpenMontage", "desc": "AI 编程助手秒变视频制作工作室（5.3万★）",
+     "lang": "Python", "week": "", "stars_total": "53284", "win": "需WSL",
+     "zh_desc": "号称全球首个开源 agentic 视频制作系统：内置 12 条生产流水线、100+ 工具、700+ agent 技能和生产知识文件，把你的 AI 编程助手变成一座完整的视频制作工作室，从脚本、图像生成到剪辑配音全流程。5.3万+星标，视频创作者加 AI agent 的梦幻组合，开箱即用。",
+     "reason": "AI 编程助手秒变视频工作室，12条流水线开箱即用，创作自动化新高度。"},
 ]
 
 
@@ -1121,6 +1144,31 @@ def main():
                             if not (it.get("section") in ("github", "ai") and it.get("win") == "不可用")]
             STATS["dropped_no_win"] = dropped
             log(f"[Windows过滤] 剔除 {len(dropped)} 条不可用: {dropped[:5]}{' ...' if len(dropped) > 5 else ''}")
+        # 已推荐过滤（2026-08-29：AI 动态区里的 GitHub 项目也会被 Exa/HN 推回来，
+        # 如 MoonshotAI/Kimi-K3 已连推 5 天。只剔 GitHub 项目类重复，新闻/资讯保留——
+        # 用户要求"之前推荐过的项目不能重复"，新闻是时效内容不算项目。纪录片区(doc)保留）
+        def _norm(u):
+            return (u or "").strip().rstrip("/").replace("https://", "").replace("http://", "").lower()
+        hist_urls = set()
+        try:
+            hist_path = os.path.join(BASE, "data", "recommended_history.json")
+            if os.path.exists(hist_path):
+                for u in json.load(open(hist_path, encoding="utf-8")):
+                    hist_urls.add(_norm(u))
+        except Exception:
+            pass
+        if hist_urls:
+            duped = [it.get("title", "") for it in RAW_ITEMS
+                     if it.get("section") != "doc"
+                     and "github.com" in _norm(it.get("url"))
+                     and _norm(it.get("url")) in hist_urls]
+            if duped:
+                RAW_ITEMS[:] = [it for it in RAW_ITEMS
+                                if it.get("section") == "doc"
+                                or "github.com" not in _norm(it.get("url"))
+                                or _norm(it.get("url")) not in hist_urls]
+                STATS["dropped_already_recommended"] = duped
+                log(f"[去重] 剔除 {len(duped)} 条已推荐 GitHub 项目: {duped[:5]}{' ...' if len(duped) > 5 else ''}")
         with open(RAW_PATH, "w", encoding="utf-8") as f:
             json.dump({"date": TODAY, "items": RAW_ITEMS}, f, ensure_ascii=False, indent=1)
     else:
@@ -1136,15 +1184,15 @@ def main():
     log(f"RSS : {RSS_PATH}")
     conn.close()
 
-    # 复制一份到桌面（用户要求）
+    # 复制一份到看板目录（用户要求 2026-08-29：D:\BaiduSyncdisk\2 @AI编程\AI看板）
     try:
-        desk = os.path.join(os.path.expanduser("~"), "Desktop")
-        os.makedirs(desk, exist_ok=True)
-        desk_dst = os.path.join(desk, f"AI看板_{TODAY}.html")
-        shutil.copyfile(HTML_PATH, desk_dst)
-        log(f"已复制到桌面: {desk_dst}")
+        board_dir = r"D:\BaiduSyncdisk\2 @AI编程\AI看板"
+        os.makedirs(board_dir, exist_ok=True)
+        board_dst = os.path.join(board_dir, f"AI看板_{TODAY}.html")
+        shutil.copyfile(HTML_PATH, board_dst)
+        log(f"已复制到看板目录: {board_dst}")
     except Exception as e:
-        log(f"  ERR 复制到桌面: {e}")
+        log(f"  ERR 复制到看板目录: {e}")
 
     gh = sum(1 for it in RAW_ITEMS if it.get("section") == "github")
     ai = sum(1 for it in RAW_ITEMS if it.get("section") == "ai")
